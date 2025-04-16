@@ -1,0 +1,28 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/An071003/QLDRL_BE.git"
+  },
+  "author": "An&Quan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/An071003/QLDRL_BE/issues"
+  },
+  "homepage": "https://github.com/An071003/QLDRL_BE#readme",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mysql": "^2.18.1",
+    "nodemon": "^3.1.9"
+  }
+}
