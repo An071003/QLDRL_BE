@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
+const Student = require("../models/Student");
 
 const signToken = (user) => {
   return jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
@@ -54,6 +55,37 @@ const login = async (req, res) => {
   }
 };
 
+const register = async (req, res) => {
+  const { name, email, password, role = 'student', studentId } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Thiếu thông tin." });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = { name, email, password: hashedPassword, role };
+
+    const result = await User.insertUser(user);
+    const userId = result.insertId;
+
+    if (role === 'student' && studentId) {
+      await Student.insertStudentSql(name, userId);
+      return res.status(201).json({ message: "Đăng ký thành công (student)." });
+    }
+
+    res.status(201).json({ message: `Đăng ký thành công (${role}).` });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ message: "Email đã tồn tại." });
+    }
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server.", error: err });
+  }
+};
+
+
+
 const logout = (req, res) => {
   res.cookie("token", "loggedout", {
     expires: new Date(Date.now() + 1000),
@@ -76,4 +108,4 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, getMe };
+module.exports = { login, logout, register, getMe };
