@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const User = require("../models/User");
-const Student = require("../models/Student");
+const User = require("../models/userModel");
+const Student = require("../models/studentModel");
 
 const signToken = (user) => {
     return jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
@@ -32,13 +32,13 @@ const createSendToken = (user, statusCode, res) => {
 const login = async (req, res) => {
 
     const { username, password } = req.body;
-
+    
     if (!username || !password) {
         return res.status(400).json({ message: "Vui lòng cung cấp tên đăng nhập và mật khẩu." });
     }
 
     try {
-        const user = await User.findUserByUsername(username);
+        const user = await User.findByUsername(username);
         if (!user) {
             return res.status(401).json({ message: "Tên đăng nhập hoặc mật khẩu không đúng." });
         }
@@ -65,11 +65,11 @@ const register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = { name, email, password: hashedPassword, role };
 
-        const result = await User.insertUser(user);
+        const result = await User.createUser(user);
         const userId = result.insertId;
 
         if (role === 'student' && studentId) {
-            await Student.insertStudentSql(name, userId);
+            await Student.insertStudent(name, userId);
             return res.status(201).json({ message: "Đăng ký thành công (student)." });
         }
 
@@ -83,8 +83,6 @@ const register = async (req, res) => {
     }
 };
 
-
-
 const logout = (req, res) => {
     res.cookie("token", "loggedout", {
         expires: new Date(Date.now() + 1000),
@@ -95,15 +93,15 @@ const logout = (req, res) => {
 
 const getMe = async (req, res) => {
     try {
-        const user = await User.findUserById(req.user.id);
+        const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ message: "Người dùng không tồn tại." });
         }
-        user.password = undefined;
         res.status(200).json({ status: "success", data: { user } });
     } catch (err) {
         res.status(500).json({ message: "Lỗi máy chủ." });
     }
 };
+
 
 module.exports = { login, logout, register, getMe };
