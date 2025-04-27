@@ -57,13 +57,13 @@ const createUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
     const { id } = req.params;
-    const { name, email, role } = req.body;
+    const { role } = req.body;
     try {
         const user = await User.findById(id);
         if (!user) {
             return res.status(404).json({ message: "Người dùng không tồn tại." });
         }
-        await User.updateUser(id, { name, email, role });
+        await User.updateUser(id, { role });
         res.status(200).json({ status: "success", message: "Cập nhật người dùng thành công." });
     } catch (err) {
         res.status(500).json({ message: "Lỗi máy chủ." });
@@ -81,6 +81,41 @@ const changePassword = async (req, res) => {
         await User.updateUserPassword(id, password);
         res.status(200).json({ status: "success", message: "Cập nhật mật khẩu thành công." });
     } catch (err) {
+        res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+};
+
+const createWithFileExcel = async (req, res) => {
+    const users = req.body;
+
+    if (!Array.isArray(users) || users.length === 0) {
+        return res.status(400).json({ message: "Danh sách người dùng không hợp lệ." });
+    }
+
+    try {
+        const createdUsers = [];
+        for (const user of users) {
+            const { name, email, role } = user;
+
+            const existingUser = await User.findByUsername(name);
+            const emailExists = await User.findByEmail(email);
+            if (existingUser || emailExists) {
+                continue;
+            }
+
+            const password = generateRandomPassword();
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            const newUser = await User.createUser({ name, email, hashedPassword, role });
+
+            await emailMiddleware(email, name, password);
+
+            createdUsers.push(newUser);
+        }
+
+        res.status(201).json({ status: "success", message: "Import người dùng thành công.", data: { createdUsers } });
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ message: "Lỗi máy chủ." });
     }
 };
@@ -104,5 +139,6 @@ module.exports = {
     getUserById,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    createWithFileExcel,
 };

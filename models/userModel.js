@@ -28,8 +28,8 @@ const createUser = async (user) => {
 };
 
 const updateUser = async (id, user) => {
-  const { name, email, role } = user;
-  const [result] = await db.promise().query("UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?", [name, email, role, id]);
+  const { role } = user;
+  const [result] = await db.promise().query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
   return result;
 };
 
