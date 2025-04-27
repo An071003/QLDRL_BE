@@ -41,7 +41,7 @@ const sendEmail = async (toEmail, username, password) => {
     }
 };
 
-const emailMiddleware = (email, name, password) => {
+const emailMiddleware = (email, name, password, res) => {
     sendEmail(email, name, password)
         .then(() => next())
         .catch((err) => res.status(500).json({ message: "Lỗi gửi email." }));

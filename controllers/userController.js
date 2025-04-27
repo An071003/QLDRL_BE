@@ -47,7 +47,7 @@ const createUser = async (req, res) => {
 
         const newUser = await User.createUser({ name, email, hashedPassword, role });
 
-        await emailMiddleware(email, name, password);
+        await emailMiddleware(email, name, password, res);
 
         res.status(201).json({ status: "success", data: { user: newUser } });
     } catch (err) {
@@ -96,7 +96,11 @@ const createWithFileExcel = async (req, res) => {
         const createdUsers = [];
         for (const user of users) {
             const { name, email, role } = user;
-
+            
+            if (!name || !email || !role) {
+                continue;
+            }
+            
             const existingUser = await User.findByUsername(name);
             const emailExists = await User.findByEmail(email);
             if (existingUser || emailExists) {
@@ -108,7 +112,7 @@ const createWithFileExcel = async (req, res) => {
 
             const newUser = await User.createUser({ name, email, hashedPassword, role });
 
-            await emailMiddleware(email, name, password);
+            await emailMiddleware(email, name, password, res);
 
             createdUsers.push(newUser);
         }
