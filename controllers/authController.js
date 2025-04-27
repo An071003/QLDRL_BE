@@ -36,7 +36,7 @@ const login = async (req, res) => {
     if (!username || !password) {
         return res.status(400).json({ message: "Vui lòng cung cấp tên đăng nhập và mật khẩu." });
     }
-
+    
     try {
         const user = await User.findByUsername(username);
         if (!user) {
@@ -47,7 +47,7 @@ const login = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ message: "Tên đăng nhập hoặc mật khẩu không đúng." });
         }
-
+        
         createSendToken(user, 200, res);
     } catch (err) {
         res.status(500).json({ message: "Lỗi máy chủ." });

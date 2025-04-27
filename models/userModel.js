@@ -2,7 +2,7 @@ const db = require("../config/db");
 
 const findByUsername = async (username) => {
   const [result] = await db.promise().query("SELECT * FROM users WHERE name = ?", [username]);
-  return result;
+  return result[0];
 };
 
 const findById = async (id) => {
@@ -12,7 +12,6 @@ const findById = async (id) => {
 
 const selectAllUsers = async () => { 
   const [result] = await db.promise().query("SELECT * FROM users");
-  console.log(result);
   return result;
 }
 
@@ -43,6 +42,6 @@ module.exports = {
   findById,
   createUser,
   selectAllUsers,
-  selectAllUsers,
   updateUser,
+  deleteUser
 };

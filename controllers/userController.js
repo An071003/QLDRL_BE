@@ -30,7 +30,7 @@ const createUser = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: "Tên người dùng đã tồn tại." });
         }
-        const newUser = await User.insertUser({ name, email, password, role });
+        const newUser = await User.createUser({ name, email, password, role });
         res.status(201).json({ status: "success", data: { user: newUser } });
     } catch (err) {
         res.status(500).json({ message: "Lỗi máy chủ." });
