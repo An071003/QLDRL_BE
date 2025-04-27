@@ -1,4 +1,11 @@
 const User = require("../models/userModel");
+const crypto = require("crypto");
+const bcrypt = require("bcrypt");
+const emailMiddleware = require("../middlewares/emailMiddleware");
+
+const generateRandomPassword = () => {
+    return crypto.randomBytes(8).toString('hex');
+};
 
 const getAllUsers = async (req, res) => {
     try {
@@ -20,21 +27,28 @@ const getUserById = async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: "Lỗi máy chủ." });
     }
-
 };
 
 const createUser = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, role } = req.body;
+    
     try {
         const existingUser = await User.findByUsername(name);
         if (existingUser) {
             return res.status(400).json({ message: "Tên người dùng đã tồn tại." });
         }
+        
         const emailExists = await User.findByEmail(email);
         if (emailExists) {
             return res.status(400).json({ message: "Email đã tồn tại." });
         }
-        const newUser = await User.createUser({ name, email, password, role });
+        const password = generateRandomPassword();
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await User.createUser({ name, email, hashedPassword, role });
+
+        await emailMiddleware(email, name, password);
+
         res.status(201).json({ status: "success", data: { user: newUser } });
     } catch (err) {
         res.status(500).json({ message: "Lỗi máy chủ." });

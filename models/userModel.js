@@ -21,8 +21,9 @@ const selectAllUsers = async () => {
 }
 
 const createUser = async (user) => {
-  const { name, email, password, role } = user;
-  const [result] = await db.promise().query("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)", [name, email, password, role]);
+  const { name, email, hashedPassword, role } = user;
+  const [result] = await db.promise().query("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)", [name, email, hashedPassword, role]);
+  
   return result;
 };
 
