@@ -17,7 +17,7 @@ const getUserById = async (req, res) => {
             return res.status(404).json({ message: "Người dùng không tồn tại." });
         }
         res.status(200).json({ status: "success", data: { user } });
-    } catch (err)  {
+    } catch (err) {
         res.status(500).json({ message: "Lỗi máy chủ." });
     }
 
@@ -29,6 +29,10 @@ const createUser = async (req, res) => {
         const existingUser = await User.findByUsername(name);
         if (existingUser) {
             return res.status(400).json({ message: "Tên người dùng đã tồn tại." });
+        }
+        const emailExists = await User.findByEmail(email);
+        if (emailExists) {
+            return res.status(400).json({ message: "Email đã tồn tại." });
         }
         const newUser = await User.createUser({ name, email, password, role });
         res.status(201).json({ status: "success", data: { user: newUser } });

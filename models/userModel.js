@@ -10,6 +10,11 @@ const findById = async (id) => {
   return result;
 };
 
+const findByEmail = async (email) => {
+  const [result] = await db.promise().query("SELECT * FROM users WHERE email = ?", [email]);
+  return result[0];
+};
+
 const selectAllUsers = async () => { 
   const [result] = await db.promise().query("SELECT * FROM users");
   return result;
@@ -40,6 +45,7 @@ deleteUser = async (id) => {
 module.exports = {
   findByUsername,
   findById,
+  findByEmail,
   createUser,
   selectAllUsers,
   updateUser,
