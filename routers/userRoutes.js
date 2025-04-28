@@ -1,15 +1,14 @@
 const express = require('express');
-const { getAllUsers, getUserById, deleteUser, updateUser, createUser, createWithFileExcel } = require('../controllers/userController');
+const UserController = require('../controllers/userController');
 const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 
-router.get('/', authenticateUser, authorizeRoles('admin'), getAllUsers);
-router.get('/:id', authenticateUser, authorizeRoles('admin'), getUserById);
-router.post('/', authenticateUser, authorizeRoles('admin'), createUser);
-router.put('/:id', authenticateUser, authorizeRoles('admin'), updateUser);
-// router.patch('/changePassword', authenticateUser, updateUserpawssword);
-router.delete('/:id', authenticateUser, authorizeRoles('admin'), deleteUser);
-router.post('/import', authenticateUser, authorizeRoles('admin'), createWithFileExcel);
+router.get('/', authenticateUser, authorizeRoles('admin'), UserController.getAllUsers);
+router.get('/:id', authenticateUser, authorizeRoles('admin'), UserController.getUserById);
+router.post('/', authenticateUser, authorizeRoles('admin'), UserController.createUser);
+router.put('/:id', authenticateUser, authorizeRoles('admin'), UserController.updateUser);
+router.delete('/:id', authenticateUser, authorizeRoles('admin'), UserController.deleteUser);
+router.post('/import', authenticateUser, authorizeRoles('admin'), UserController.createWithFileExcel);
 
 module.exports = router;

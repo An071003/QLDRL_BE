@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
+const db = require('../config/db');
 
-const sendEmail = async (toEmail, username, password) => {
+const sendEmail = async (toEmail, subject, htmlContent) => {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -10,27 +11,10 @@ const sendEmail = async (toEmail, username, password) => {
     });
 
     const mailOptions = {
-        from: 'pekkidjj123@gmail.com',
+        from: process.env.EMAIL_USER,
         to: toEmail,
-        subject: 'Tài khoản người dùng mới',
-        html: `
-        <div style="max-width: 800px; margin: 0 auto; background-color: #1b2838; color: #ffffff; padding: 30px; border-radius: 10px; font-family: Arial, sans-serif; text-align: center;">
-            <h2 style="font-size: 26px; color: #66c0f4; font-weight: 700; margin-bottom: 20px;">Tài khoản người dùng mới</h2>
-            <p style="font-size: 16px; margin-bottom: 20px; color: #d1d5db;">
-                Chào ${username},<br>
-                Tài khoản của bạn đã được tạo thành công.
-            </p>
-            <p style="font-size: 18px; color: #ffffff; margin-bottom: 15px;">
-                Dưới đây là thông tin tài khoản của bạn:
-            </p>
-            <div style="background-color: #171a21; border-radius: 8px; padding: 20px; display: inline-block; margin: 20px 0;">
-                <p style="font-size: 18px; font-weight: 700;">Tên người dùng: ${username}</p>
-                <p style="font-size: 18px; font-weight: 700;">Mật khẩu: ${password}</p>
-            </div>
-            <p style="font-size: 16px; color: #ffffff; margin-top: 20px;">
-                Vui lòng đăng nhập và thay đổi mật khẩu ngay sau khi truy cập tài khoản của bạn để đảm bảo an toàn.
-            </p>
-        </div>`,
+        subject: subject,
+        html: htmlContent,
     };
 
     try {
@@ -41,10 +25,57 @@ const sendEmail = async (toEmail, username, password) => {
     }
 };
 
-const emailMiddleware = (email, name, password, res) => {
-    sendEmail(email, name, password)
-        .then(() => next())
-        .catch((err) => res.status(500).json({ message: "Lỗi gửi email." }));
+const sendOTP = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const [userResult] = await db.promise().query(
+            "SELECT id FROM users WHERE email = ?",
+            [email]
+        );
+        if (userResult.length === 0) {
+            return res.status(404).json({ message: "Email không tồn tại." });
+        }
+        const user = userResult[0];
+
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await EmailVerificationCode.create(user.id, otp, expiresAt);
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Mã xác thực đổi mật khẩu',
+            html: `
+                <h2>Mã xác thực:</h2>
+                <p style="font-size: 24px; font-weight: bold;">${otp}</p>
+                <p>Mã có hiệu lực trong 10 phút.</p>
+            `
+        });
+
+        res.status(200).json({ message: "Gửi mã OTP thành công. Vui lòng kiểm tra email." });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Lỗi gửi mã OTP." });
+    }
+};
+
+const emailMiddleware = async (email, subject, htmlContent, res) => {
+    try {
+        await sendEmail(email, subject, htmlContent);
+    } catch (error) {
+        console.error('Error sending email:', error);
+        res.status(500).json({ message: "Lỗi gửi email." });
+    }
 };
 
 module.exports = emailMiddleware;
