@@ -4,7 +4,7 @@ const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddlew
 
 const router = express.Router();
 
-router.get('/', authenticateUser, authorizeRoles('admin'), ActivityController.getAllActivities);
+router.get('/', authenticateUser, authorizeRoles('admin', 'lecturer'), ActivityController.getAllActivities);
 router.get('/:id', authenticateUser, authorizeRoles('admin'), ActivityController.getActivityById);
 router.post('/', authenticateUser, authorizeRoles('admin'), ActivityController.createActivity);
 router.put('/:id', authenticateUser, authorizeRoles('admin'), ActivityController.updateActivity);
