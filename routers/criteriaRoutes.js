@@ -4,7 +4,7 @@ const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddlew
 
 const router = express.Router();
 
-router.get('/', authenticateUser, authorizeRoles('admin'), CriteriaController.getAllCriteria);
+router.get('/', authenticateUser, authorizeRoles('admin', 'lecturer'), CriteriaController.getAllCriteria);
 router.get('/:id', authenticateUser, authorizeRoles('admin'), CriteriaController.getCriteriaById);
 router.post('/', authenticateUser, authorizeRoles('admin'), CriteriaController.createCriteria);
 router.put('/:id', authenticateUser, authorizeRoles('admin'), CriteriaController.updateCriteria);
