@@ -116,8 +116,10 @@ class AuthController {
                 return res.status(404).json({ message: "Email không tồn tại." });
             }
             
+            await Email.deleteByUserId(user.id);
+
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+            const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
 
             await Email.createVerifyCode(user.id, otp, expiresAt);
 
@@ -125,7 +127,7 @@ class AuthController {
             const htmlContent = `
                     <h2>Mã xác thực của bạn:</h2>
                     <p style="font-size: 24px; font-weight: bold;">${otp}</p>
-                    <p>Mã sẽ hết hạn sau 10 phút.</p>
+                    <p>Mã sẽ hết hạn sau 5 phút.</p>
                 `;
 
             await emailMiddleware(email, subject, htmlContent, res);
@@ -148,7 +150,7 @@ class AuthController {
 
             const validCode = await Email.findVerifyCode(user.id, otp);
             if (!validCode) {
-                return res.status(400).json({ message: "Mã OTP không hợp lệ hoặc đã hết hạn." });
+                return res.status(400).json({ message: "Mã xác thực không hợp lệ hoặc đã hết hạn." });
             }
 
             const hashedPassword = await bcrypt.hash(newPassword, 10);
