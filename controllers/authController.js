@@ -115,8 +115,6 @@ class AuthController {
             if (!user) {
                 return res.status(404).json({ message: "Email không tồn tại." });
             }
-            
-            await Email.deleteByUserId(user.id);
 
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
