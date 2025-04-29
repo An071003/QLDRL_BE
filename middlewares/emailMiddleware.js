@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const db = require('../config/db');
+const cron = require("node-cron");
 
 const sendEmail = async (toEmail, subject, htmlContent) => {
     const transporter = nodemailer.createTransport({
@@ -77,5 +78,16 @@ const emailMiddleware = async (email, subject, htmlContent, res) => {
         res.status(500).json({ message: "Lỗi gửi email." });
     }
 };
+
+cron.schedule("*/2 * * * *", async () => {
+    try {
+        await db.promise().query(
+            "DELETE FROM email_verification_codes WHERE expires_at < NOW()"
+        );
+        console.log("Dọn dẹp mã xác thực đã hết hạn thành công.");
+    } catch (error) {
+        console.error("Lỗi khi dọn dẹp mã xác thực:", error);
+    }
+});
 
 module.exports = emailMiddleware;
