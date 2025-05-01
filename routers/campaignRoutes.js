@@ -1,4 +1,3 @@
-// routers/campaignRoutes.js
 const express = require('express');
 const CampaignController = require('../controllers/campaignController');
 const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');

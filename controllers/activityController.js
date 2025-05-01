@@ -39,7 +39,7 @@ class ActivityController {
 
   static async updateActivity(req, res) {
     const { id } = req.params;
-    const { name, point, campaign_id } = req.body;
+    const { name, point, campaign_id, negativescore } = req.body;
 
     try {
       const activity = await Activity.findById(id);
@@ -47,7 +47,7 @@ class ActivityController {
         return res.status(404).json({ message: "Hoạt động không tồn tại." });
       }
 
-      await Activity.updateActivity(id, { name, point, campaign_id });
+      await Activity.updateActivity(id, { name, point, campaign_id, negativescore });
       res.status(200).json({ status: "success", message: "Cập nhật hoạt động thành công." });
     } catch (err) {
       console.error("Error updating activity:", err);

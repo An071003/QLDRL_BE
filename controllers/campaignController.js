@@ -1,4 +1,3 @@
-// controllers/campaignController.js
 const db = require('../config/db');
 const Campaign = require("../models/campaignModel");
 
@@ -30,7 +29,6 @@ class CampaignController {
   static async createCampaign(req, res) {
     const { name, max_score, criteria_id, is_negative, negativescore } = req.body;
     try {
-      // Lấy học kỳ mới nhất
       const [semesterResult] = await db.promise().query(
         `SELECT id FROM student_discipline_management.semester ORDER BY id DESC LIMIT 1`
       );
@@ -49,13 +47,14 @@ class CampaignController {
 
   static async updateCampaign(req, res) {
     const { id } = req.params;
-    const { name, max_score, criteria_id, is_negative, negativescore } = req.body;
+    const { name, max_score, criteria_id, negativescore } = req.body;
     try {
       const campaign = await Campaign.findById(id);
       if (!campaign) {
         return res.status(404).json({ message: "Chiến dịch không tồn tại." });
       }
-      await Campaign.updateCampaign(id, { name, max_score, criteria_id, is_negative, negativescore });
+
+      await Campaign.updateCampaign(id, { name, max_score, criteria_id, negativescore });
       res.status(200).json({ status: "success", message: "Cập nhật chiến dịch thành công." });
     } catch (err) {
       console.error("Error updating campaign:", err);

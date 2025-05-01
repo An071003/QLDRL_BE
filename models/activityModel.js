@@ -32,12 +32,15 @@ class Activity {
     return result;
   }
 
-  static async updateActivity(id, { name, point, campaign_id }) {
+  static async updateActivity(id, { name, point, campaign_id, negativescore }) {
+    const is_negative = negativescore !== 0;
+    const adjustedNegativescore = is_negative ? negativescore : null;
+  
     const [result] = await db.promise().query(
       `UPDATE student_discipline_management.activities 
-       SET name = ?, point = ?, campaign_id = ? 
+       SET name = ?, point = ?, campaign_id = ?, is_negative = ?, negativescore = ?
        WHERE id = ?`,
-      [name, point, campaign_id, id]
+      [name, point, campaign_id, is_negative, adjustedNegativescore, id]
     );
     return result;
   }

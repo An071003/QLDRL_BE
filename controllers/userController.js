@@ -1,6 +1,7 @@
 const User = require("../models/userModel");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
+const pLimit = require('p-limit');
 const emailMiddleware = require("../middlewares/emailMiddleware");
 
 class UserController {
@@ -15,7 +16,7 @@ class UserController {
         } catch (err) {
             res.status(500).json({ message: "Lỗi máy chủ." });
         }
-    };
+    }
 
     static async getUserById(req, res) {
         const { id } = req.params;
@@ -28,26 +29,32 @@ class UserController {
         } catch (err) {
             res.status(500).json({ message: "Lỗi máy chủ." });
         }
-    };
+    }
 
     static async createUser(req, res) {
         const { name, email, role } = req.body;
 
         try {
-            const existingUser = await User.findByUsername(name);
-            if (existingUser) {
-                return res.status(400).json({ message: "Tên người dùng đã tồn tại." });
+            if (!name || !email || !role) {
+                return res.status(400).json({ message: "Thiếu thông tin." });
             }
 
-            const emailExists = await User.findByEmail(email);
-            if (emailExists) {
+            const existing = await User.findExistingUsers(email, name);
+            const existingEmails = new Set(existing.map(e => e.email));
+            const existingNames = new Set(existing.map(e => e.name));
+
+            if (existingEmails.has(email)) {
                 return res.status(400).json({ message: "Email đã tồn tại." });
             }
+            if (existingNames.has(name)) {
+                return res.status(400).json({ message: "Tên đã tồn tại." });
+            }
+           
             const password = UserController.generateRandomPassword();
-
             const hashedPassword = await bcrypt.hash(password, 10);
-
-            const newUser = await User.createUser({ name, email, hashedPassword, role });
+            
+            const result = await User.createUser({ name, email, hashedPassword, role });
+            const newUser = await User.findById(result.insertId);
 
             const subject = "Mật khẩu mới của bạn";
             const htmlContent = `
@@ -69,13 +76,16 @@ class UserController {
                 </p>
             </div>`;
 
-            await emailMiddleware(email, subject, htmlContent, res);
+            const emailresult = await emailMiddleware(email, subject, htmlContent);
+            if (!emailresult.success) {
+                return res.status(500).json({ message: emailresult.error });
+            }
 
             res.status(201).json({ status: "success", data: { user: newUser } });
         } catch (err) {
             res.status(500).json({ message: "Lỗi máy chủ." });
         }
-    };
+    }
 
     static async updateUser(req, res) {
         const { id } = req.params;
@@ -90,66 +100,94 @@ class UserController {
         } catch (err) {
             res.status(500).json({ message: "Lỗi máy chủ." });
         }
-    };
+    }
 
     static async createWithFileExcel(req, res) {
         const users = req.body;
-
+    
         if (!Array.isArray(users) || users.length === 0) {
             return res.status(400).json({ message: "Danh sách người dùng không hợp lệ." });
         }
-
+    
         try {
-            const createdUsers = [];
-            for (const user of users) {
-                const { name, email, role } = user;
-                
-                if (!name || !email || !role) {
+            const emails = users.map(u => u.email);
+            const names = users.map(u => u.name);
+            const existing = await User.findExistingUsers(emails, names);
+    
+            const existingEmails = new Set(existing.map(e => e.email));
+            const existingNames = new Set(existing.map(e => e.name));
+    
+            const validUsers = [];
+            const failed = [];
+    
+            for (const u of users) {
+                if (!u.name || !u.email || !u.role) {
+                    failed.push({ name: u.name, email: u.email, reason: "Thiếu thông tin" });
                     continue;
                 }
-
-                const existingUser = await User.findByUsername(name);
-                const emailExists = await User.findByEmail(email);
-                if (existingUser || emailExists) {
+    
+                if (existingEmails.has(u.email)) {
+                    failed.push({ name: u.name, email: u.email, reason: "Trùng email" });
                     continue;
                 }
-
+    
+                if (existingNames.has(u.name)) {
+                    failed.push({ name: u.name, email: u.email, reason: "Trùng tên" });
+                    continue;
+                }
+    
                 const password = UserController.generateRandomPassword();
                 const hashedPassword = await bcrypt.hash(password, 10);
-
-                const newUser = await User.createUser({ name, email, hashedPassword, role });
-
-                const subject = "Mật khẩu mới của bạn";
-                const htmlContent = `
-                <div style="max-width: 800px; margin: 0 auto; background-color: #1b2838; color: #ffffff; padding: 30px; border-radius: 10px; font-family: Arial, sans-serif; text-align: center;">
-                    <h2 style="font-size: 26px; color: #66c0f4; font-weight: 700; margin-bottom: 20px;">Tài khoản người dùng mới</h2>
-                    <p style="font-size: 16px; margin-bottom: 20px; color: #d1d5db;">
-                        Chào ${name},<br>
-                        Tài khoản của bạn đã được tạo thành công.
-                    </p>
-                    <p style="font-size: 18px; color: #ffffff; margin-bottom: 15px;">
-                        Dưới đây là thông tin tài khoản của bạn:
-                    </p>
-                    <div style="background-color: #171a21; border-radius: 8px; padding: 20px; display: inline-block; margin: 20px 0;">
-                        <p style="font-size: 18px; font-weight: 700;">Tên người dùng: ${name}</p>
-                        <p style="font-size: 18px; font-weight: 700;">Mật khẩu: ${password}</p>
-                    </div>
-                    <p style="font-size: 16px; color: #ffffff; margin-top: 20px;">
-                        Vui lòng đăng nhập và thay đổi mật khẩu ngay sau khi truy cập tài khoản của bạn để đảm bảo an toàn.
-                    </p>
-                </div>`;
-
-                await emailMiddleware(email, subject, htmlContent, res);
-
-                createdUsers.push(newUser);
+                validUsers.push({ ...u, hashedPassword, plainPassword: password });
             }
-
-            res.status(201).json({ status: "success", message: "Import người dùng thành công.", data: { createdUsers } });
+    
+            await User.bulkCreateUsers(validUsers);
+    
+            const pLimit = require('p-limit');
+            const limit = pLimit(20);
+    
+            const sendTasks = validUsers.map(user =>
+                limit(async () => {
+                    const htmlContent = `
+                    <div style="max-width: 800px; margin: 0 auto; background-color: #1b2838; color: #ffffff; padding: 30px; border-radius: 10px; font-family: Arial, sans-serif; text-align: center;">
+                        <h2 style="font-size: 26px; color: #66c0f4; font-weight: 700; margin-bottom: 20px;">Tài khoản người dùng mới</h2>
+                        <p style="font-size: 16px; margin-bottom: 20px; color: #d1d5db;">
+                            Chào ${user.name},<br>
+                            Tài khoản của bạn đã được tạo thành công.
+                        </p>
+                        <p style="font-size: 18px; color: #ffffff; margin-bottom: 15px;">
+                            Dưới đây là thông tin tài khoản của bạn:
+                        </p>
+                        <div style="background-color: #171a21; border-radius: 8px; padding: 20px; display: inline-block; margin: 20px 0;">
+                            <p style="font-size: 18px; font-weight: 700;">Tên người dùng: ${user.name}</p>
+                            <p style="font-size: 18px; font-weight: 700;">Mật khẩu: ${user.plainPassword}</p>
+                        </div>
+                        <p style="font-size: 16px; color: #ffffff; margin-top: 20px;">
+                            Vui lòng đăng nhập và thay đổi mật khẩu ngay sau khi truy cập tài khoản của bạn để đảm bảo an toàn.
+                        </p>
+                    </div>`;
+    
+                    try {
+                        await emailMiddleware(user.email, "Mật khẩu mới của bạn", htmlContent);
+                    } catch (e) {
+                        failed.push({ name: user.name, email: user.email, reason: "Lỗi gửi email" });
+                    }
+                })
+            );
+    
+            await Promise.all(sendTasks);
+    
+            res.status(201).json({
+                status: failed.length === 0 ? "success" : "partial",
+                message: `Tạo ${validUsers.length} người dùng thành công, ${failed.length} thất bại.`,
+                data: { createdUsers: validUsers.map(u => ({ name: u.name, email: u.email })), failed }
+            });
         } catch (err) {
             console.error(err);
             res.status(500).json({ message: "Lỗi máy chủ." });
         }
-    };
+    }
+    
 
     static async deleteUser(req, res) {
         const { id } = req.params;
@@ -163,7 +201,7 @@ class UserController {
         } catch (err) {
             res.status(500).json({ message: "Lỗi máy chủ." });
         }
-    };
+    }
 }
 
 module.exports = UserController;

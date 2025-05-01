@@ -70,12 +70,13 @@ const sendOTP = async (req, res) => {
     }
 };
 
-const emailMiddleware = async (email, subject, htmlContent, res) => {
+const emailMiddleware = async (email, subject, htmlContent) => {
     try {
         await sendEmail(email, subject, htmlContent);
+        return { success: true };
     } catch (error) {
         console.error('Error sending email:', error);
-        res.status(500).json({ message: "Lỗi gửi email." });
+        return { success: false, error: "Lỗi gửi email." };
     }
 };
 
@@ -84,7 +85,6 @@ cron.schedule("*/2 * * * *", async () => {
         await db.promise().query(
             "DELETE FROM email_verification_codes WHERE expires_at < NOW()"
         );
-        console.log("Dọn dẹp mã xác thực đã hết hạn thành công.");
     } catch (error) {
         console.error("Lỗi khi dọn dẹp mã xác thực:", error);
     }

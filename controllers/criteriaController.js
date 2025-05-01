@@ -1,5 +1,3 @@
-// controllers/criteriaController.js
-const db = require('../config/db');
 const Criteria = require("../models/criteriaModel");
 
 class CriteriaController {

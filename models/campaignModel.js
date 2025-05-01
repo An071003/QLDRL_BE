@@ -1,4 +1,3 @@
-// === models/campaignModel.js ===
 const db = require("../config/db");
 
 class Campaign {
@@ -13,11 +12,13 @@ class Campaign {
 
   static async selectAllCampaigns() {
     const [result] = await db.promise().query(
-      `SELECT c.id, c.criteria_id, c.name, c.max_score, c.semester, 
+      `SELECT c.id, c.criteria_id, c.name, c.max_score AS campaign_max_score, c.semester, 
               c.is_negative, c.negativescore,
-              s.name AS semester_name, s.start_year, s.end_year
-       FROM student_discipline_management.campaigns c
-       JOIN student_discipline_management.semester s ON c.semester = s.id`
+              s.name AS semester_name, s.start_year, s.end_year,
+              cr.name AS criteria_name, cr.max_score AS criteria_max_score
+      FROM student_discipline_management.campaigns c
+      JOIN student_discipline_management.semester s ON c.semester = s.id
+      JOIN student_discipline_management.criteria cr ON c.criteria_id = cr.id`
     );
     return result;
   }
@@ -32,12 +33,15 @@ class Campaign {
     return result;
   }
 
-  static async updateCampaign(id, { name, max_score, criteria_id, is_negative, negativescore }) {
+  static async updateCampaign(id, { name, max_score, criteria_id, negativescore }) {
+    const is_negative = negativescore !== 0;
+    const adjustedNegativescore = is_negative ? negativescore : null;
+
     const [result] = await db.promise().query(
       `UPDATE student_discipline_management.campaigns 
        SET name = ?, max_score = ?, criteria_id = ?, is_negative = ?, negativescore = ?
        WHERE id = ?`,
-      [name, max_score, criteria_id, is_negative, negativescore, id]
+      [name, max_score, criteria_id, is_negative, adjustedNegativescore, id]
     );
     return result;
   }
