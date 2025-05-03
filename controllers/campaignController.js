@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const Campaign = require("../models/campaignModel");
+const Semester = require('../models/semesterModel');
 
 class CampaignController {
   static async getAllCampaigns(req, res) {
@@ -29,9 +30,7 @@ class CampaignController {
   static async createCampaign(req, res) {
     const { name, max_score, criteria_id, is_negative, negativescore } = req.body;
     try {
-      const [semesterResult] = await db.promise().query(
-        `SELECT id FROM student_discipline_management.semester ORDER BY id DESC LIMIT 1`
-      );
+      const semesterResult = await Semester.selectthelastid();
       const semesterId = semesterResult[0]?.id;
       if (!semesterId) {
         return res.status(400).json({ message: "Không tìm thấy học kỳ." });
@@ -84,9 +83,7 @@ class CampaignController {
     }
 
     try {
-      const [semesterResult] = await db.promise().query(
-        `SELECT id FROM student_discipline_management.semester ORDER BY id DESC LIMIT 1`
-      );
+      const semesterResult = await Semester.selectthelastid();
       const semesterId = semesterResult[0]?.id;
       if (!semesterId) {
         return res.status(400).json({ message: "Không tìm thấy học kỳ." });

@@ -32,15 +32,16 @@ class Activity {
     return result;
   }
 
-  static async updateActivity(id, { name, point, campaign_id, negativescore }) {
+  static async updateActivity(id, { name, point, campaign_id, negativescore, status }) {
     const is_negative = negativescore !== 0;
     const adjustedNegativescore = is_negative ? negativescore : null;
-  
+    console.log("is_negative:", is_negative);
+    console.log("Adjusted Negativescore:", adjustedNegativescore);
     const [result] = await db.promise().query(
       `UPDATE student_discipline_management.activities 
-       SET name = ?, point = ?, campaign_id = ?, is_negative = ?, negativescore = ?
+       SET name = ?, point = ?, campaign_id = ?, is_negative = ?, negativescore = ?, status = ?
        WHERE id = ?`,
-      [name, point, campaign_id, is_negative, adjustedNegativescore, id]
+      [name, point, campaign_id, is_negative, adjustedNegativescore, status, id]
     );
     return result;
   }
@@ -52,6 +53,14 @@ class Activity {
       [id]
     );
     return result;
+  }
+
+  static async getPoint(id) {
+    const [result] = await db.promise().query(
+      `SELECT point FROM activities WHERE id = ?`,
+      [id]
+    );
+    return result[0].point;
   }
 }
 

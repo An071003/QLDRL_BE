@@ -8,6 +8,7 @@ const criteriaRoutes = require("./routers/criteriaRoutes");
 const semesterRoutes = require("./routers/semesterRoutes");
 const campaignRoutes = require("./routers/campaignRoutes");
 const activityRoutes = require("./routers/activityRoutes");
+const studentActivityRoutes = require("./routers/studentActivityRoutes");
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/criteria', criteriaRoutes);
 app.use('/api/semesters', semesterRoutes);
 app.use("/api/campaigns", campaignRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/student-activities', studentActivityRoutes);
 
 
 app.listen(process.env.PORT, () => {

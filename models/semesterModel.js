@@ -39,6 +39,11 @@ class Semester {
     const [result] = await db.promise().query("DELETE FROM semester WHERE id = ?", [id]);
     return result;
   }
+
+  static async selectthelastid(){
+    const [rows] = await db.promise().query("SELECT id FROM semester ORDER BY id DESC LIMIT 1");
+    return rows;
+  }
 }
 
 module.exports = Semester;
