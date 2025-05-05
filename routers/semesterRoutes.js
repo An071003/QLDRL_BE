@@ -7,5 +7,6 @@ const router = express.Router();
 router.get('/', authenticateUser, authorizeRoles('admin'), SemesterController.getAllSemesters);
 router.post('/', authenticateUser, authorizeRoles('admin'), SemesterController.createSemester);
 router.delete('/:id', authenticateUser, authorizeRoles('admin'), SemesterController.deleteSemester);
+router.get('/current', authenticateUser, SemesterController.getCurrentSemester);
 
 module.exports = router;

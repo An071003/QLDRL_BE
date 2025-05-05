@@ -4,9 +4,11 @@ const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddlew
 
 const router = express.Router();
 
-router.get('/:activityId/', authenticateUser, authorizeRoles('admin', 'lecturer', 'student'), StudentActivityController.getStudentsByActivity);
-router.get('/:activityId/not-participated',authenticateUser, authorizeRoles('admin', 'lecturer', 'student'), StudentActivityController.getStudentsNotInActivity);
-router.post('/:activityId/students', authenticateUser, authorizeRoles('admin', 'lecturer', 'student'), StudentActivityController.addStudent);
-router.delete('/:activityId/students/:studentIds', authenticateUser, authorizeRoles('admin', 'lecturer', 'student'), StudentActivityController.removeStudent);
+router.get('/:activityId/', authenticateUser, StudentActivityController.getStudentsByActivity);
+router.get('/:activityId/not-participated', authenticateUser, StudentActivityController.getStudentsNotInActivity);
+router.post('/:activityId/students', authenticateUser, StudentActivityController.addStudent);
+router.post('/:activityId/import', authenticateUser, authorizeRoles('admin', 'lecturer'), StudentActivityController.importStudents);
+router.patch('/:activityId/', authenticateUser, authorizeRoles('admin', 'lecturer'), StudentActivityController.editStudentParticipation);
+router.delete('/:activityId/students/:studentIds', authenticateUser, StudentActivityController.removeStudent);
 
 module.exports = router;

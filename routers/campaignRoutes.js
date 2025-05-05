@@ -5,6 +5,7 @@ const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddlew
 const router = express.Router();
 
 router.get('/', authenticateUser, authorizeRoles('admin', 'lecturer'), CampaignController.getAllCampaigns);
+router.get('/semester', authenticateUser, authorizeRoles('admin', 'lecturer'), CampaignController.getAllCampaignsBySemester);
 router.get('/:id', authenticateUser, authorizeRoles('admin'), CampaignController.getCampaignById);
 router.post('/', authenticateUser, authorizeRoles('admin'), CampaignController.createCampaign);
 router.put('/:id', authenticateUser, authorizeRoles('admin'), CampaignController.updateCampaign);

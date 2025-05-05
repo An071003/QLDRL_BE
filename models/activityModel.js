@@ -5,8 +5,8 @@ class Activity {
     const [result] = await db.promise().query(
       `SELECT a.id, a.name, a.point, a.is_negative, a.negativescore, a.status, a.number_students, 
               a.campaign_id, c.name AS campaign_name
-       FROM student_discipline_management.activities a
-       JOIN student_discipline_management.campaigns c ON a.campaign_id = c.id
+       FROM activities a
+       JOIN campaigns c ON a.campaign_id = c.id
        WHERE a.id = ?`,
       [id]
     );
@@ -16,16 +16,18 @@ class Activity {
   static async selectAllActivities() {
     const [result] = await db.promise().query(
       `SELECT a.id, a.name, a.point, a.is_negative, a.negativescore, a.status, a.number_students, 
-              a.campaign_id, c.name AS campaign_name
-       FROM student_discipline_management.activities a
-       JOIN student_discipline_management.campaigns c ON a.campaign_id = c.id`
+              a.campaign_id, c.name AS campaign_name,
+              c.semester, s.name AS semester_name, s.start_year, s.end_year
+       FROM activities a
+       JOIN campaigns c ON a.campaign_id = c.id
+       JOIN semester s ON c.semester = s.id`
     );
     return result;
   }
 
   static async createActivity({ name, point, campaign_id, is_negative, negativescore }) {
     const [result] = await db.promise().query(
-      `INSERT INTO student_discipline_management.activities (name, point, campaign_id, is_negative, negativescore)
+      `INSERT INTO activities (name, point, campaign_id, is_negative, negativescore)
        VALUES (?, ?, ?, ?, ?)`,
       [name, point, campaign_id, is_negative, negativescore]
     );
@@ -35,10 +37,9 @@ class Activity {
   static async updateActivity(id, { name, point, campaign_id, negativescore, status }) {
     const is_negative = negativescore !== 0;
     const adjustedNegativescore = is_negative ? negativescore : null;
-    console.log("is_negative:", is_negative);
-    console.log("Adjusted Negativescore:", adjustedNegativescore);
+
     const [result] = await db.promise().query(
-      `UPDATE student_discipline_management.activities 
+      `UPDATE activities 
        SET name = ?, point = ?, campaign_id = ?, is_negative = ?, negativescore = ?, status = ?
        WHERE id = ?`,
       [name, point, campaign_id, is_negative, adjustedNegativescore, status, id]
@@ -48,7 +49,7 @@ class Activity {
 
   static async deleteActivity(id) {
     const [result] = await db.promise().query(
-      `DELETE FROM student_discipline_management.activities
+      `DELETE FROM activities
        WHERE id = ?`,
       [id]
     );

@@ -99,6 +99,21 @@ class CampaignController {
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
+
+  static async getAllCampaignsBySemester(req, res) {
+    try {
+      const semesterResult = await Semester.selectthelastid();
+      const semesterId = semesterResult[0]?.id;
+      if (!semesterId) {
+        return res.status(400).json({ message: "Không tìm thấy học kỳ." });
+      }
+      const campaigns = await Campaign.selectAllCampaignsBySemester(semesterId);
+      res.status(200).json({ status: "success", data: { campaigns } });
+    } catch (err) {
+      console.error("Error fetching campaigns by semester:", err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  };
 }
 
 module.exports = CampaignController;

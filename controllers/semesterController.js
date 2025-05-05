@@ -28,6 +28,19 @@ class SemesterController {
       res.status(500).json({ message: "Lỗi khi xóa học kỳ." });
     }
   }
+
+  static async getCurrentSemester(req, res) {
+    try {
+      const semester = await Semester.selectthelastid();
+      if (semester.length === 0) {
+        return res.status(404).json({ message: "Không tìm thấy học kỳ hiện tại." });
+      }
+      const currentSemester = semester[0]?.id;
+      res.status(200).json({ status: "success", data: { currentSemester } });
+    } catch (error) {
+      res.status(500).json({ message: "Lỗi khi lấy học kỳ hiện tại." });
+    }
+  }
 }
 
 module.exports = SemesterController;

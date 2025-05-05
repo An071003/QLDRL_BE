@@ -3,7 +3,7 @@ const db = require("../config/db");
 class Criteria {
   static async findById(id) {
     const [result] = await db.promise().query(
-      "SELECT id, name, max_score FROM student_discipline_management.criteria WHERE id = ?",
+      "SELECT id, name, max_score FROM criteria WHERE id = ?",
       [id]
     );
     return result[0];
@@ -11,14 +11,14 @@ class Criteria {
 
   static async selectAllCriteria() {
     const [result] = await db.promise().query(
-      "SELECT id, name, max_score FROM student_discipline_management.criteria"
+      "SELECT id, name, max_score FROM criteria"
     );
     return result;
   }
 
   static async createCriteria({ name, max_score }) {
     const [result] = await db.promise().query(
-      "INSERT INTO student_discipline_management.criteria (name, max_score) VALUES (?, ?)",
+      "INSERT INTO criteria (name, max_score) VALUES (?, ?)",
       [name, max_score]
     );
     return result;
@@ -26,7 +26,7 @@ class Criteria {
 
   static async updateCriteria(id, name, max_score) {
     const [result] = await db.promise().query(
-      "UPDATE student_discipline_management.criteria SET name = ?, max_score = ? WHERE id = ?",
+      "UPDATE criteria SET name = ?, max_score = ? WHERE id = ?",
       [name, max_score, id]
     );
     return result;
@@ -34,7 +34,7 @@ class Criteria {
 
   static async deleteCriteria(id) {
     const [result] = await db.promise().query(
-      "DELETE FROM student_discipline_management.criteria WHERE id = ?",
+      "DELETE FROM criteria WHERE id = ?",
       [id]
     );
     return result;
