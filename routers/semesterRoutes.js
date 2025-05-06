@@ -4,7 +4,7 @@ const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddlew
 
 const router = express.Router();
 
-router.get('/', authenticateUser, authorizeRoles('admin'), SemesterController.getAllSemesters);
+router.get('/', authenticateUser, authorizeRoles('admin', 'lecturer'), SemesterController.getAllSemesters);
 router.post('/', authenticateUser, authorizeRoles('admin'), SemesterController.createSemester);
 router.delete('/:id', authenticateUser, authorizeRoles('admin'), SemesterController.deleteSemester);
 router.get('/current', authenticateUser, SemesterController.getCurrentSemester);

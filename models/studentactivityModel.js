@@ -12,6 +12,27 @@ class StudentActivity {
     return result;
   }
 
+  static async getActivitiesByStudent(student_id) {
+    const [result] = await db.promise().query(
+      `SELECT 
+        a.id AS activity_id,
+        a.name AS activity_name,
+        c.name AS campaign_name,
+        a.point,
+        sa.awarded_score,
+        sa.participated,
+        CONCAT(s.name, ' ', s.start_year, '-', s.end_year) AS semester_name,
+        a.status
+      FROM student_activities sa
+      JOIN activities a ON sa.activity_id = a.id
+      JOIN campaigns c ON a.campaign_id = c.id
+      JOIN semester s ON sa.semester = s.id
+      WHERE sa.student_id = ?`,
+      [student_id]
+    );
+    return result;
+  }
+
   static async getStudentsNotInActivity(activity_id, semester) {
     const [result] = await db.promise().query(
       `SELECT s.id AS student_id, s.student_name, s.class
@@ -74,6 +95,8 @@ class StudentActivity {
     );
     return result[0];
   }
+
+  
 }
 
 module.exports = StudentActivity;

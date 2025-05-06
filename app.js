@@ -9,6 +9,7 @@ const semesterRoutes = require("./routers/semesterRoutes");
 const campaignRoutes = require("./routers/campaignRoutes");
 const activityRoutes = require("./routers/activityRoutes");
 const studentActivityRoutes = require("./routers/studentActivityRoutes");
+const studentRoutes = require("./routers/studentRouter");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/students", studentRoutes);
 app.use('/api/criteria', criteriaRoutes);
 app.use('/api/semesters', semesterRoutes);
 app.use("/api/campaigns", campaignRoutes);
