@@ -124,7 +124,6 @@ class StudentActivityController {
         return res.status(400).json({ message: 'Không tìm thấy điểm cho hoạt động này.' });
       }
 
-      // Lấy ID sinh viên từ mã số sinh viên (mssv)
       const [dbStudents] = await db.promise().query(
         `SELECT id AS student_id FROM students WHERE id IN (?)`,
         [students.map(s => s.mssv)]
@@ -158,12 +157,10 @@ class StudentActivityController {
     }
   }
 
-  // ✅ API: GET /api/student-activities/:studentId?semester=123
   static async getStudentActivitiesBySemester(req, res) {
     const { studentId } = req.params;
 
     try {
-      // Lấy học kỳ mới nhất
       const [semesterResult] = await db.promise().query(`
         SELECT id FROM semester ORDER BY start_year DESC, name DESC LIMIT 1
       `);
@@ -214,7 +211,6 @@ class StudentActivityController {
     }
   }
 
-  // ✅ API mới: Lấy hoạt động ongoing mà sinh viên chưa đăng ký
   static async getAvailableActivitiesForStudent(req, res) {
     const { studentId } = req.params;
 

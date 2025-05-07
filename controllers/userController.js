@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const pLimit = require('p-limit');
 const emailMiddleware = require("../middlewares/emailMiddleware");
+const Student = require("../models/studentModel");
 
 class UserController {
     static generateRandomPassword = () => {
@@ -49,10 +50,10 @@ class UserController {
             if (existingNames.has(name)) {
                 return res.status(400).json({ message: "Tên đã tồn tại." });
             }
-           
+
             const password = UserController.generateRandomPassword();
             const hashedPassword = await bcrypt.hash(password, 10);
-            
+
             const result = await User.createUser({ name, email, hashedPassword, role });
             const newUser = await User.findById(result.insertId);
 
@@ -75,6 +76,13 @@ class UserController {
                     Vui lòng đăng nhập và thay đổi mật khẩu ngay sau khi truy cập tài khoản của bạn để đảm bảo an toàn.
                 </p>
             </div>`;
+
+            if (role === 'student') {
+                await Student.createStudent({
+                    id: name,
+                    userId: newUser[0].id
+                });
+            }
 
             const emailresult = await emailMiddleware(email, subject, htmlContent);
             if (!emailresult.success) {
@@ -104,50 +112,58 @@ class UserController {
 
     static async createWithFileExcel(req, res) {
         const users = req.body;
-    
+
         if (!Array.isArray(users) || users.length === 0) {
             return res.status(400).json({ message: "Danh sách người dùng không hợp lệ." });
         }
-    
+
         try {
             const emails = users.map(u => u.email);
             const names = users.map(u => u.name);
             const existing = await User.findExistingUsers(emails, names);
-    
+
             const existingEmails = new Set(existing.map(e => e.email));
             const existingNames = new Set(existing.map(e => e.name));
-    
+
             const validUsers = [];
             const failed = [];
-    
+
             for (const u of users) {
                 if (!u.name || !u.email || !u.role) {
                     failed.push({ name: u.name, email: u.email, reason: "Thiếu thông tin" });
                     continue;
                 }
-    
+
                 if (existingEmails.has(u.email)) {
                     failed.push({ name: u.name, email: u.email, reason: "Trùng email" });
                     continue;
                 }
-    
+
                 if (existingNames.has(u.name)) {
                     failed.push({ name: u.name, email: u.email, reason: "Trùng tên" });
                     continue;
                 }
-    
+
                 const password = UserController.generateRandomPassword();
                 const hashedPassword = await bcrypt.hash(password, 10);
                 validUsers.push({ ...u, hashedPassword, plainPassword: password });
             }
-    
-            await User.bulkCreateUsers(validUsers);
-    
+
+            const insertResults = await User.bulkCreateUsers(validUsers);
+            const startInsertId = insertResults.insertId;
             const pLimit = require('p-limit');
             const limit = pLimit(20);
-    
-            const sendTasks = validUsers.map(user =>
+
+            const sendTasks = validUsers.map((user, index) =>
                 limit(async () => {
+                    const newUserId = startInsertId + index;
+                    if (user.role === 'student') {
+                        await Student.createStudent({
+                            id: user.name,
+                            userId: newUserId
+                        });
+                    }
+
                     const htmlContent = `
                     <div style="max-width: 800px; margin: 0 auto; background-color: #1b2838; color: #ffffff; padding: 30px; border-radius: 10px; font-family: Arial, sans-serif; text-align: center;">
                         <h2 style="font-size: 26px; color: #66c0f4; font-weight: 700; margin-bottom: 20px;">Tài khoản người dùng mới</h2>
@@ -166,7 +182,7 @@ class UserController {
                             Vui lòng đăng nhập và thay đổi mật khẩu ngay sau khi truy cập tài khoản của bạn để đảm bảo an toàn.
                         </p>
                     </div>`;
-    
+
                     try {
                         await emailMiddleware(user.email, "Mật khẩu mới của bạn", htmlContent);
                     } catch (e) {
@@ -174,9 +190,9 @@ class UserController {
                     }
                 })
             );
-    
+
             await Promise.all(sendTasks);
-    
+
             res.status(201).json({
                 status: failed.length === 0 ? "success" : "partial",
                 message: `Tạo ${validUsers.length} người dùng thành công, ${failed.length} thất bại.`,
@@ -187,7 +203,7 @@ class UserController {
             res.status(500).json({ message: "Lỗi máy chủ." });
         }
     }
-    
+
 
     static async deleteUser(req, res) {
         const { id } = req.params;

@@ -19,7 +19,6 @@ class User {
   static async createUser({ name, email, hashedPassword, role }) {
     const [result] = await db.promise().query("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)", [name, email, hashedPassword, role]);
     return result;
-
   }
 
   static async selectAllUsers() {

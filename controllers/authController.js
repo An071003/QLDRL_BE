@@ -134,7 +134,7 @@ class AuthController {
             const htmlContent = `
                     <h2>Mã xác thực của bạn:</h2>
                     <p style="font-size: 24px; font-weight: bold;">${otp}</p>
-                    <p>Mã sẽ hết hạn sau 5 phút.</p>
+                    <p>Mã sẽ hết hạn sau 2 phút.</p>
                 `;
 
             await emailMiddleware(email, subject, htmlContent, res);

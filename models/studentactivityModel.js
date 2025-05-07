@@ -3,10 +3,19 @@ const db = require('../config/db');
 class StudentActivity {
   static async getStudentsByActivity(activity_id) {
     const [result] = await db.promise().query(
-      `SELECT sa.student_id, s.student_name, s.class, sa.awarded_score, sa.participated, sa.semester
-       FROM student_activities sa
-       JOIN students s ON sa.student_id = s.id
-       WHERE sa.activity_id = ?`,
+      `SELECT 
+        sa.student_id, s.student_name, s.class, sa.awarded_score, sa.participated,
+        sa.semester,
+        a.id AS activity_id, a.name AS activity_name, a.point,
+        c.name AS campaign_name,
+        a.status,
+        sem.name AS semester_name, sem.start_year, sem.end_year
+      FROM student_activities sa
+      JOIN students s ON sa.student_id = s.id
+      JOIN activities a ON sa.activity_id = a.id
+      JOIN campaigns c ON a.campaign_id = c.id
+      JOIN semester sem ON sa.semester = sem.id
+      WHERE sa.activity_id = ?`,
       [activity_id]
     );
     return result;
