@@ -38,12 +38,12 @@ class Student {
     return rows;
   }
 
-  static async createStudent({ id, userId, studentName = null, faculty = null, course = null, className = null }) {
+  static async createStudent({ id, userId, student_name = null, faculty = null, course = null, className = null }) {
     const [result] = await db.promise().query(`
       INSERT INTO students (id, user_id, student_name, faculty, course, class, sumscore)
       VALUES (?, ?, ?, ?, ?, ?, 0)
       `,
-      [id, userId, studentName, faculty, course, className]
+      [id, userId, student_name, faculty, course, className]
     );
     return result;
   }

@@ -148,7 +148,13 @@ class UserController {
                 const hashedPassword = await bcrypt.hash(password, 10);
                 validUsers.push({ ...u, hashedPassword, plainPassword: password });
             }
-
+            if(validUsers.length === 0){
+                return res.status(400).json({
+                    status: "failure",
+                    message: `Không có người dùng hợp lệ để tạođể tạo hoặc chưa đã tồn tại trong hệ thống.`,
+                    data: { failed }
+                });
+            }
             const insertResults = await User.bulkCreateUsers(validUsers);
             const startInsertId = insertResults.insertId;
             const pLimit = require('p-limit');
