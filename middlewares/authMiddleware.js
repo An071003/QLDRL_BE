@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { User, Permission } = require('../models');
 
 const authenticateUser = (req, res, next) => {
     const token = req.cookies.token;
@@ -16,11 +17,35 @@ const authenticateUser = (req, res, next) => {
 
 const authorizeRoles = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ message: "Forbidden." });
+        const userRole = req.user.role;
+        if (!roles.includes(userRole)) {
+            return res.status(403).json({ message: 'Forbidden: You do not have the required role.' });
         }
         next();
     };
 };
 
-module.exports = { authenticateUser, authorizeRoles };
+
+const authorizePermissions = (...permissions) => {
+    return async (req, res, next) => {
+        const user = await User.findOne({
+            where: { id: req.user.id },
+            include: {
+                model: Permission,
+                through: { attributes: [] },
+            }
+        });
+        const userPermissions = user ? user.Permissions.map(p => p.name) : [];
+        const hasPermission = permissions.every(permission =>
+            userPermissions.includes(permission)
+        );
+
+        if (!hasPermission) {
+            return res.status(403).json({ message: 'Forbidden.' });
+        }
+        next();
+    };
+};
+
+
+module.exports = { authenticateUser, authorizeRoles, authorizePermissions };

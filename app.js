@@ -18,13 +18,13 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/students", studentRoutes);
-app.use('/api/criteria', criteriaRoutes);
-app.use('/api/semesters', semesterRoutes);
-app.use("/api/campaigns", campaignRoutes);
-app.use('/api/activities', activityRoutes);
-app.use('/api/student-activities', studentActivityRoutes);
+// app.use("/api/users", userRoutes);
+// app.use("/api/students", studentRoutes);
+// app.use('/api/criteria', criteriaRoutes);
+// app.use('/api/semesters', semesterRoutes);
+// app.use("/api/campaigns", campaignRoutes);
+// app.use('/api/activities', activityRoutes);
+// app.use('/api/student-activities', studentActivityRoutes);
 
 
 app.listen(process.env.PORT, () => {

@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
-const db = require('../config/db');
+const { User, EmailVerificationCode } = require('../models');
 const cron = require("node-cron");
+const { Op } = require('sequelize');
 
 const sendEmail = async (toEmail, subject, htmlContent) => {
     const transporter = nodemailer.createTransport({
@@ -30,19 +31,22 @@ const sendOTP = async (req, res) => {
     const { email } = req.body;
 
     try {
-        const [userResult] = await db.promise().query(
-            "SELECT id FROM users WHERE email = ?",
-            [email]
-        );
-        if (userResult.length === 0) {
+        const user = await User.findOne({
+            where: { email }
+        });
+
+        if (!user) {
             return res.status(404).json({ message: "Email không tồn tại." });
         }
-        const user = userResult[0];
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-        await EmailVerificationCode.create(user.id, otp, expiresAt);
+        await EmailVerificationCode.create({
+            user_id: user.id,
+            code: otp,
+            expires_at: expiresAt,
+        });
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -82,9 +86,13 @@ const emailMiddleware = async (email, subject, htmlContent) => {
 
 cron.schedule("*/2 * * * *", async () => {
     try {
-        await db.promise().query(
-            "DELETE FROM email_verification_codes WHERE expires_at < NOW()"
-        );
+        const result = await EmailVerificationCode.destroy({
+            where: {
+                expires_at: {
+                    [Op.lt]: new Date(),
+                },
+            },
+        });
     } catch (error) {
         console.error("Lỗi khi dọn dẹp mã xác thực:", error);
     }
