@@ -13,13 +13,19 @@ const Criteria = require('./criteria.model');
 const Campaign = require('./campaign.model');
 const Activity = require('./activity.model');
 const StudentActivity = require('./studentActivity.model');
-const StudentScore = require('./student.model');
+const StudentScore = require('./studentScore.model');
 const Ranking = require('./ranking.model');
+const Permission = require('./permission.model');
+const RolePermission = require('./rolePermission.model');
 
 // ==== Associations ====
 // User - Role
 User.belongsTo(Role, { foreignKey: 'role_id' });
 Role.hasMany(User, { foreignKey: 'role_id' });
+
+// Role - Permission
+Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'role_id' });
+Permission.belongsToMany(Role, { through: RolePermission, foreignKey: 'permission_id' });
 
 // User - EmailVerificationCode
 User.hasMany(EmailVerificationCode, { foreignKey: 'user_id' });
@@ -61,13 +67,17 @@ Faculty.hasMany(Student, { foreignKey: 'faculty_id' });
 DepartmentOfficer.belongsTo(User, { foreignKey: 'user_id' });
 User.hasOne(DepartmentOfficer, { foreignKey: 'user_id' });
 
-// Campaign - Criterion
+// Criteria - User (created_by)
+Criteria.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Criteria, { foreignKey: 'created_by', as: 'created_criteria' });
+
+// Campaign - Criteria
 Campaign.belongsTo(Criteria, { foreignKey: 'criteria_id' });
 Criteria.hasMany(Campaign, { foreignKey: 'criteria_id' });
 
 // Campaign - User (created_by)
-Campaign.belongsTo(User, { foreignKey: 'created_by' });
-User.hasMany(Campaign, { foreignKey: 'created_by' });
+Campaign.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+User.hasMany(Campaign, { foreignKey: 'created_by', as: 'created_campaigns' });
 
 // Activity - Campaign
 Activity.belongsTo(Campaign, { foreignKey: 'campaign_id' });
@@ -92,6 +102,8 @@ module.exports = {
   sequelize,
   User,
   Role,
+  Permission,
+  RolePermission,
   EmailVerificationCode,
   Faculty,
   Advisor,

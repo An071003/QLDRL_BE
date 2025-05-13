@@ -2,14 +2,15 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
-const authRoutes = require("./routers/authRoutes");
-const userRoutes = require("./routers/userRoutes");
-const criteriaRoutes = require("./routers/criteriaRoutes");
-const semesterRoutes = require("./routers/semesterRoutes");
-const campaignRoutes = require("./routers/campaignRoutes");
-const activityRoutes = require("./routers/activityRoutes");
-const studentActivityRoutes = require("./routers/studentActivityRoutes");
-const studentRoutes = require("./routers/studentRouter");
+const authRoutes = require("./routers/auth.routes");
+const roleRoutes = require("./routers/role.routes")
+// const userRoutes = require("./routers/userRoutes");
+// const criteriaRoutes = require("./routers/criteriaRoutes");
+// const semesterRoutes = require("./routers/semesterRoutes");
+// const campaignRoutes = require("./routers/campaignRoutes");
+// const activityRoutes = require("./routers/activityRoutes");
+// const studentActivityRoutes = require("./routers/studentActivityRoutes");
+// const studentRoutes = require("./routers/studentRouter");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/roles", roleRoutes);
 // app.use("/api/users", userRoutes);
 // app.use("/api/students", studentRoutes);
 // app.use('/api/criteria', criteriaRoutes);
