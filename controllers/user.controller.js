@@ -1,9 +1,12 @@
-const User = require("../models/userModel");
+const User = require("../models/user.model");
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const pLimit = require('p-limit');
 const emailMiddleware = require("../middlewares/emailMiddleware");
-const Student = require("../models/studentModel");
+const Student = require("../models/student.model");
+const Role = require('../models/role.model');
+const { Op } = require("sequelize");
+const { Advisor, DepartmentOfficer } = require("../models");
 
 class UserController {
     static generateRandomPassword = () => {
@@ -12,7 +15,10 @@ class UserController {
 
     static async getAllUsers(req, res) {
         try {
-            const users = await User.selectAllUsers();
+            const users = await User.findAll({
+                include: [{ model: Role, attributes: ['name'] }],
+                attributes: ['id', 'user_name', 'email', 'role_id', 'created_at']
+            });
             res.status(200).json({ status: "success", data: { users } });
         } catch (err) {
             res.status(500).json({ message: "Lỗi máy chủ." });
@@ -22,7 +28,10 @@ class UserController {
     static async getUserById(req, res) {
         const { id } = req.params;
         try {
-            const user = await User.findById(id);
+            const user = await User.findOne({
+                where: { id },
+                include: [{ model: Role, attributes: ['name'] }]
+            });
             if (!user) {
                 return res.status(404).json({ message: "Người dùng không tồn tại." });
             }
@@ -33,43 +42,49 @@ class UserController {
     }
 
     static async createUser(req, res) {
-        const { name, email, role } = req.body;
+        const { user_name, email, role_id } = req.body;
 
         try {
-            if (!name || !email || !role) {
+            if (!user_name || !email || !role_id) {
                 return res.status(400).json({ message: "Thiếu thông tin." });
             }
 
-            const existing = await User.findExistingUsers(email, name);
-            const existingEmails = new Set(existing.map(e => e.email));
-            const existingNames = new Set(existing.map(e => e.name));
+            const existingUsers = await User.findAll({
+                where: {
+                    [Op.or]: [{ email }, { user_name }]
+                }
+            });
 
-            if (existingEmails.has(email)) {
-                return res.status(400).json({ message: "Email đã tồn tại." });
-            }
-            if (existingNames.has(name)) {
-                return res.status(400).json({ message: "Tên đã tồn tại." });
+            if (existingUsers.length > 0) {
+                const existingEmail = existingUsers.find(user => user.email === email);
+                const existingName = existingUsers.find(user => user.user_name === user_name);
+                if (existingEmail) {
+                    return res.status(400).json({ message: "Email đã tồn tại." });
+                }
+                if (existingName) {
+                    return res.status(400).json({ message: "Tên đã tồn tại." });
+                }
             }
 
             const password = UserController.generateRandomPassword();
             const hashedPassword = await bcrypt.hash(password, 10);
 
-            const result = await User.createUser({ name, email, hashedPassword, role });
-            const newUser = await User.findById(result.insertId);
+            const newUser = await User.create({ user_name, email, password: hashedPassword, role_id });
+            const role = await Role.findByPk(role_id);
 
             const subject = "Mật khẩu mới của bạn";
             const htmlContent = `
             <div style="max-width: 800px; margin: 0 auto; background-color: #1b2838; color: #ffffff; padding: 30px; border-radius: 10px; font-family: Arial, sans-serif; text-align: center;">
                 <h2 style="font-size: 26px; color: #66c0f4; font-weight: 700; margin-bottom: 20px;">Tài khoản người dùng mới</h2>
                 <p style="font-size: 16px; margin-bottom: 20px; color: #d1d5db;">
-                    Chào ${name},<br>
+                    Chào ${user_name},<br>
                     Tài khoản của bạn đã được tạo thành công.
                 </p>
                 <p style="font-size: 18px; color: #ffffff; margin-bottom: 15px;">
                     Dưới đây là thông tin tài khoản của bạn:
                 </p>
                 <div style="background-color: #171a21; border-radius: 8px; padding: 20px; display: inline-block; margin: 20px 0;">
-                    <p style="font-size: 18px; font-weight: 700;">Tên người dùng: ${name}</p>
+                    <p style="font-size: 18px; font-weight: 700;">Tên người dùng: ${user_name}</p>
                     <p style="font-size: 18px; font-weight: 700;">Mật khẩu: ${password}</p>
                 </div>
                 <p style="font-size: 16px; color: #ffffff; margin-top: 20px;">
@@ -77,16 +92,14 @@ class UserController {
                 </p>
             </div>`;
 
-            if (role === 'student') {
-                await Student.createStudent({
-                    id: name,
-                    userId: newUser[0].id
-                });
-            }
+            await emailMiddleware(email, subject, htmlContent);
 
-            const emailresult = await emailMiddleware(email, subject, htmlContent);
-            if (!emailresult.success) {
-                return res.status(500).json({ message: emailresult.error });
+            if (role.name === 'student') {
+                await Student.create({ user_id: newUser.id, student_id: newUser.user_name });
+            } else if (role.name === 'advisor') {
+                await Advisor.create({ user_id: newUser.id });
+            } else if (role.name === 'departmentofficer') {
+                await DepartmentOfficer.create({ user_id: newUser.id });
             }
 
             res.status(201).json({ status: "success", data: { user: newUser } });
@@ -97,13 +110,13 @@ class UserController {
 
     static async updateUser(req, res) {
         const { id } = req.params;
-        const { role } = req.body;
+        const { role_id } = req.body;
         try {
-            const user = await User.findById(id);
+            const user = await User.findByPk(id);
             if (!user) {
                 return res.status(404).json({ message: "Người dùng không tồn tại." });
             }
-            await User.updateUser(id, role);
+            await user.update({ role_id });
             res.status(200).json({ status: "success", message: "Cập nhật người dùng thành công." });
         } catch (err) {
             res.status(500).json({ message: "Lỗi máy chủ." });
@@ -119,28 +132,36 @@ class UserController {
 
         try {
             const emails = users.map(u => u.email);
-            const names = users.map(u => u.name);
-            const existing = await User.findExistingUsers(emails, names);
+            const user_names = users.map(u => u.user_name);
+
+            const existing = await User.findAll({
+                where: {
+                    [Op.or]: [
+                        { email: { [Op.in]: emails } },
+                        { user_name: { [Op.in]: user_names } }
+                    ]
+                }
+            });
 
             const existingEmails = new Set(existing.map(e => e.email));
-            const existingNames = new Set(existing.map(e => e.name));
+            const existingNames = new Set(existing.map(e => e.user_name));
 
             const validUsers = [];
             const failed = [];
 
             for (const u of users) {
-                if (!u.name || !u.email || !u.role) {
-                    failed.push({ name: u.name, email: u.email, reason: "Thiếu thông tin" });
+                if (!u.user_name || !u.email || !u.role_id) {
+                    failed.push({ user_name: u.user_name, email: u.email, reason: "Thiếu thông tin" });
                     continue;
                 }
 
                 if (existingEmails.has(u.email)) {
-                    failed.push({ name: u.name, email: u.email, reason: "Trùng email" });
+                    failed.push({ user_name: u.user_name, email: u.email, reason: "Trùng email" });
                     continue;
                 }
 
-                if (existingNames.has(u.name)) {
-                    failed.push({ name: u.name, email: u.email, reason: "Trùng tên" });
+                if (existingNames.has(u.user_name)) {
+                    failed.push({ user_name: u.user_name, email: u.email, reason: "Trùng tên" });
                     continue;
                 }
 
@@ -148,51 +169,43 @@ class UserController {
                 const hashedPassword = await bcrypt.hash(password, 10);
                 validUsers.push({ ...u, hashedPassword, plainPassword: password });
             }
-            if(validUsers.length === 0){
+
+            if (validUsers.length === 0) {
                 return res.status(400).json({
                     status: "failure",
-                    message: `Không có người dùng hợp lệ để tạođể tạo hoặc chưa đã tồn tại trong hệ thống.`,
+                    message: `Không có người dùng hợp lệ để tạo hoặc đã tồn tại trong hệ thống.`,
                     data: { failed }
                 });
             }
-            const insertResults = await User.bulkCreateUsers(validUsers);
-            const startInsertId = insertResults.insertId;
-            const pLimit = require('p-limit');
-            const limit = pLimit(20);
 
-            const sendTasks = validUsers.map((user, index) =>
+            const insertedUsers = await User.bulkCreate(
+                validUsers.map(u => ({
+                    user_name: u.user_name,
+                    email: u.email,
+                    password: u.hashedPassword,
+                    role_id: u.role_id
+                }))
+            );
+
+            const limit = pLimit(20);
+            const sendTasks = insertedUsers.map((newUser, index) =>
                 limit(async () => {
-                    const newUserId = startInsertId + index;
-                    if (user.role === 'student') {
-                        await Student.createStudent({
-                            id: user.name,
-                            userId: newUserId
-                        });
+                    const role = await Role.findByPk(newUser.role_id);
+                    const originalUser = validUsers[index];
+
+                    if (role.name === 'student') {
+                        await Student.create({ user_id: newUser.id, student_id: originalUser.user_name });
+                    } else if (role.name === 'advisor') {
+                        await Advisor.create({ user_id: newUser.id });
+                    } else if (role.name === 'departmentofficer') {
+                        await DepartmentOfficer.create({ user_id: newUser.id });
                     }
 
-                    const htmlContent = `
-                    <div style="max-width: 800px; margin: 0 auto; background-color: #1b2838; color: #ffffff; padding: 30px; border-radius: 10px; font-family: Arial, sans-serif; text-align: center;">
-                        <h2 style="font-size: 26px; color: #66c0f4; font-weight: 700; margin-bottom: 20px;">Tài khoản người dùng mới</h2>
-                        <p style="font-size: 16px; margin-bottom: 20px; color: #d1d5db;">
-                            Chào ${user.name},<br>
-                            Tài khoản của bạn đã được tạo thành công.
-                        </p>
-                        <p style="font-size: 18px; color: #ffffff; margin-bottom: 15px;">
-                            Dưới đây là thông tin tài khoản của bạn:
-                        </p>
-                        <div style="background-color: #171a21; border-radius: 8px; padding: 20px; display: inline-block; margin: 20px 0;">
-                            <p style="font-size: 18px; font-weight: 700;">Tên người dùng: ${user.name}</p>
-                            <p style="font-size: 18px; font-weight: 700;">Mật khẩu: ${user.plainPassword}</p>
-                        </div>
-                        <p style="font-size: 16px; color: #ffffff; margin-top: 20px;">
-                            Vui lòng đăng nhập và thay đổi mật khẩu ngay sau khi truy cập tài khoản của bạn để đảm bảo an toàn.
-                        </p>
-                    </div>`;
-
+                    const htmlContent = `Tài khoản của bạn đã được tạo. Email: ${originalUser.email}, Mật khẩu: ${originalUser.plainPassword}`;
                     try {
-                        await emailMiddleware(user.email, "Mật khẩu mới của bạn", htmlContent);
+                        await emailMiddleware(originalUser.email, "Mật khẩu mới của bạn", htmlContent);
                     } catch (e) {
-                        failed.push({ name: user.name, email: user.email, reason: "Lỗi gửi email" });
+                        failed.push({ user_name: originalUser.user_name, email: originalUser.email, reason: "Lỗi gửi email" });
                     }
                 })
             );
@@ -201,8 +214,15 @@ class UserController {
 
             res.status(201).json({
                 status: failed.length === 0 ? "success" : "partial",
-                message: `Tạo ${validUsers.length} người dùng thành công, ${failed.length} thất bại.`,
-                data: { createdUsers: validUsers.map(u => ({ name: u.name, email: u.email })), failed }
+                message: `Tạo ${insertedUsers.length} người dùng thành công, ${failed.length} thất bại.`,
+                data: {
+                    createdUsers: insertedUsers.map((u, i) => ({
+                        user_name: u.user_name,
+                        email: u.email,
+                        password: validUsers[i].plainPassword
+                    })),
+                    failed
+                }
             });
         } catch (err) {
             console.error(err);
@@ -210,15 +230,14 @@ class UserController {
         }
     }
 
-
     static async deleteUser(req, res) {
         const { id } = req.params;
         try {
-            const user = await User.findById(id);
+            const user = await User.findByPk(id);
             if (!user) {
                 return res.status(404).json({ message: "Người dùng không tồn tại." });
             }
-            await User.deleteUser(id);
+            await user.destroy();
             res.status(200).json({ status: "success", message: "Xóa người dùng thành công." });
         } catch (err) {
             res.status(500).json({ message: "Lỗi máy chủ." });

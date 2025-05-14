@@ -25,19 +25,24 @@ const authorizeRoles = (...roles) => {
     };
 };
 
-const authorizePermissions = (...permissions) => {
+const authorizePermissions = (...requiredPermissions) => {
     return async (req, res, next) => {
         try {
             const user = await User.findByPk(req.user.id, {
                 include: {
-                    model: Permission,
-                    attributes: ['name'],
-                    through: { attributes: [] },
-                },
+                    model: Role,
+                    include: {
+                        model: Permission,
+                        attributes: ['name', 'action'],
+                        through: { attributes: [] }
+                    }
+                }
             });
 
-            const userPermissions = user.Permissions.map(p => p.name);
-            const hasAll = permissions.every(p => userPermissions.includes(p));
+            const rolePermissions = user.Role?.Permissions || [];
+            const userPermissions = rolePermissions.map(p => `${p.name}:${p.action}`);
+
+            const hasAll = requiredPermissions.every(p => userPermissions.includes(p));
 
             if (!hasAll) {
                 return res.status(403).json({ message: "Không đủ quyền." });

@@ -4,7 +4,9 @@ const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const authRoutes = require("./routers/auth.routes");
 const roleRoutes = require("./routers/role.routes")
-// const userRoutes = require("./routers/userRoutes");
+const userRoutes = require("./routers/user.routes");
+const permissionRoutes = require("./routers/permission.routes");
+const rolePermissionRoutes = require("./routers/rolePermission.routes")
 // const criteriaRoutes = require("./routers/criteriaRoutes");
 // const semesterRoutes = require("./routers/semesterRoutes");
 // const campaignRoutes = require("./routers/campaignRoutes");
@@ -20,7 +22,9 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
-// app.use("/api/users", userRoutes);
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/role-permissions', rolePermissionRoutes);
+app.use("/api/users", userRoutes);
 // app.use("/api/students", studentRoutes);
 // app.use('/api/criteria', criteriaRoutes);
 // app.use('/api/semesters', semesterRoutes);
