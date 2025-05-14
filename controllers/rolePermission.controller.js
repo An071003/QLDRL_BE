@@ -21,16 +21,16 @@ class RolePermissionController {
         }
     }
 
-    // Gán một danh sách permission cho role
+
     static async assignPermissionsToRole(req, res) {
         const { roleId } = req.params;
-        const { permissionIds } = req.body; // ví dụ: [1, 2, 3]
+        const { permissionIds } = req.body; 
 
         try {
             const role = await Role.findByPk(roleId);
             if (!role) return res.status(404).json({ message: 'Role không tồn tại' });
 
-            await role.setPermissions(permissionIds); // Xóa cũ, gán mới
+            await role.setPermissions(permissionIds); 
             res.status(200).json({ message: 'Gán permission thành công' });
         } catch (error) {
             console.error('Lỗi khi gán permissions:', error);
@@ -38,7 +38,6 @@ class RolePermissionController {
         }
     }
 
-    // Thêm một permission cho role (không xóa permission cũ)
     static async addPermissionToRole(req, res) {
         const { roleId } = req.params;
         const { permissionId } = req.body;
@@ -55,7 +54,6 @@ class RolePermissionController {
         }
     }
 
-    // Xóa một permission khỏi role
     static async removePermissionFromRole(req, res) {
         const { roleId, permissionId } = req.params;
 
