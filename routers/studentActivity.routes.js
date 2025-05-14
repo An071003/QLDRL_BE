@@ -1,19 +1,22 @@
-// const express = require('express');
-// const StudentActivityController = require('../controllers/studentActivityController');
-// const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');
+const express = require("express");
+const StudentActivityController = require("../controllers/studentactivity.controller");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.get('/:activityId/', authenticateUser, StudentActivityController.getStudentsByActivity);
-// router.get('/:activityId/not-participated', authenticateUser, StudentActivityController.getStudentsNotInActivity);
-// router.post('/:activityId/students', authenticateUser, authorizeRoles('admin', 'lecturer', 'student'), StudentActivityController.addStudent);
-// router.post('/:activityId/import', authenticateUser, authorizeRoles('admin', 'lecturer'), StudentActivityController.importStudents);
-// router.patch('/:activityId/', authenticateUser, authorizeRoles('admin', 'lecturer'), StudentActivityController.editStudentParticipation);
-// router.delete('/:activityId/students/:studentIds', authenticateUser, StudentActivityController.removeStudent);
-// router.get('/student/:studentId', authenticateUser, authorizeRoles('admin', 'lecturer', 'student'), StudentActivityController.getStudentActivitiesBySemester);
-// router.get('/:studentId/all', authenticateUser, authorizeRoles('admin', 'lecturer', 'student'), StudentActivityController.getActivityByStudent);
-// router.get('/:studentId/available', authenticateUser, StudentActivityController.getAvailableActivitiesForStudent);
+// Get all student activities
+router.get("/", authMiddleware, StudentActivityController.getAllStudentActivities);
 
+// Get a student activity by ID
+router.get("/:id", authMiddleware, StudentActivityController.getStudentActivityById);
 
+// Create a new student activity
+router.post("/", authMiddleware, StudentActivityController.createStudentActivity);
 
-// module.exports = router;
+// Update a student activity
+router.put("/:id", authMiddleware, StudentActivityController.updateStudentActivity);
+
+// Delete a student activity
+router.delete("/:id", authMiddleware, StudentActivityController.deleteStudentActivity);
+
+module.exports = router;

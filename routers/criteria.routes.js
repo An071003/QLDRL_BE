@@ -1,14 +1,22 @@
-// const express = require('express');
-// const CriteriaController = require('../controllers/criteriaController');
-// const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');
+const express = require("express");
+const CriteriaController = require("../controllers/criteria.controller");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.get('/', authenticateUser, authorizeRoles('admin', 'lecturer'), CriteriaController.getAllCriteria);
-// router.get('/:id', authenticateUser, authorizeRoles('admin'), CriteriaController.getCriteriaById);
-// router.post('/', authenticateUser, authorizeRoles('admin'), CriteriaController.createCriteria);
-// router.put('/:id', authenticateUser, authorizeRoles('admin'), CriteriaController.updateCriteria);
-// router.delete('/:id', authenticateUser, authorizeRoles('admin'), CriteriaController.deleteCriteria);
-// router.post('/import', authenticateUser, authorizeRoles('admin'), CriteriaController.importCriteria);
+// Get all criteria
+router.get("/", authMiddleware, CriteriaController.getAllCriteria);
 
-// module.exports = router;
+// Get a criterion by ID
+router.get("/:id", authMiddleware, CriteriaController.getCriterionById);
+
+// Create a new criterion
+router.post("/", authMiddleware, CriteriaController.createCriterion);
+
+// Update a criterion
+router.put("/:id", authMiddleware, CriteriaController.updateCriterion);
+
+// Delete a criterion
+router.delete("/:id", authMiddleware, CriteriaController.deleteCriterion);
+
+module.exports = router;

@@ -1,15 +1,22 @@
-// const express = require('express');
-// const CampaignController = require('../controllers/campaignController');
-// const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');
+const express = require("express");
+const CampaignController = require("../controllers/campaign.controller");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.get('/', authenticateUser, authorizeRoles('admin', 'lecturer'), CampaignController.getAllCampaigns);
-// router.get('/semester', authenticateUser, authorizeRoles('admin', 'lecturer'), CampaignController.getAllCampaignsBySemester);
-// router.get('/:id', authenticateUser, authorizeRoles('admin'), CampaignController.getCampaignById);
-// router.post('/', authenticateUser, authorizeRoles('admin'), CampaignController.createCampaign);
-// router.put('/:id', authenticateUser, authorizeRoles('admin'), CampaignController.updateCampaign);
-// router.delete('/:id', authenticateUser, authorizeRoles('admin'), CampaignController.deleteCampaign);
-// router.post('/import', authenticateUser, authorizeRoles('admin'), CampaignController.importCampaigns);
+// Get all campaigns
+router.get("/", authMiddleware, CampaignController.getAllCampaigns);
 
-// module.exports = router;
+// Get a campaign by ID
+router.get("/:id", authMiddleware, CampaignController.getCampaignById);
+
+// Create a new campaign
+router.post("/", authMiddleware, CampaignController.createCampaign);
+
+// Update a campaign
+router.put("/:id", authMiddleware, CampaignController.updateCampaign);
+
+// Delete a campaign
+router.delete("/:id", authMiddleware, CampaignController.deleteCampaign);
+
+module.exports = router;

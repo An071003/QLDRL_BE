@@ -1,87 +1,69 @@
-const Criteria = require("../models/criteriaModel");
+const { Criteria } = require("../models");
 
 class CriteriaController {
+  // Get all criteria
   static async getAllCriteria(req, res) {
     try {
-      const criterias = await Criteria.selectAllCriteria();
-      res.status(200).json({ status: "success", data: { criterias } });
+      const criteria = await Criteria.findAll();
+      res.status(200).json({ criteria });
     } catch (err) {
-      console.error("Error fetching criterias:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
-  static async getCriteriaById(req, res) {
-    const { id } = req.params;
+  // Get a criterion by ID
+  static async getCriterionById(req, res) {
     try {
-      const criteria = await Criteria.findById(id);
-      if (!criteria) {
-        return res.status(404).json({ message: "Tiêu chí không tồn tại." });
+      const { id } = req.params;
+      const criterion = await Criteria.findByPk(id);
+      if (!criterion) {
+        return res.status(404).json({ message: "Criterion not found" });
       }
-      res.status(200).json({ status: "success", data: { criteria } });
+      res.status(200).json({ criterion });
     } catch (err) {
-      console.error("Error fetching criteria by id:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
-  static async createCriteria(req, res) {
-    const { name, max_score } = req.body;
+  // Create a new criterion
+  static async createCriterion(req, res) {
     try {
-      await Criteria.createCriteria({ name, max_score });
-      res.status(201).json({ status: "success", message: "Tạo tiêu chí thành công." });
+      const { name, max_score } = req.body;
+      const newCriterion = await Criteria.create({ name, max_score });
+      res.status(201).json({ criterion: newCriterion });
     } catch (err) {
-      console.error("Error creating criteria:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
-  static async updateCriteria(req, res) {
-    const { id } = req.params;
-    const { name, max_score } = req.body;
+  // Update a criterion
+  static async updateCriterion(req, res) {
     try {
-      const criteria = await Criteria.findById(id);
-      if (!criteria) {
-        return res.status(404).json({ message: "Tiêu chí không tồn tại." });
+      const { id } = req.params;
+      const { name, max_score } = req.body;
+      const criterion = await Criteria.findByPk(id);
+      if (!criterion) {
+        return res.status(404).json({ message: "Criterion not found" });
       }
-      await Criteria.updateCriteria(id, name, max_score);
-      res.status(200).json({ status: "success", message: "Cập nhật tiêu chí thành công." });
+      await criterion.update({ name, max_score });
+      res.status(200).json({ criterion });
     } catch (err) {
-      console.error("Error updating criteria:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
-  static async deleteCriteria(req, res) {
-    const { id } = req.params;
+  // Delete a criterion
+  static async deleteCriterion(req, res) {
     try {
-      const criteria = await Criteria.findById(id);
-      if (!criteria) {
-        return res.status(404).json({ message: "Tiêu chí không tồn tại." });
+      const { id } = req.params;
+      const criterion = await Criteria.findByPk(id);
+      if (!criterion) {
+        return res.status(404).json({ message: "Criterion not found" });
       }
-      await Criteria.deleteCriteria(id);
-      res.status(200).json({ status: "success", message: "Xóa tiêu chí thành công." });
+      await criterion.destroy();
+      res.status(200).json({ message: "Criterion deleted successfully" });
     } catch (err) {
-      console.error("Error deleting criteria:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
-    }
-  }
-
-  static async importCriteria(req, res) {
-    const criterias = req.body;
-    if (!Array.isArray(criterias) || criterias.length === 0) {
-      return res.status(400).json({ message: "Danh sách tiêu chí không hợp lệ." });
-    }
-
-    try {
-      for (const { name, max_score } of criterias) {
-        if (!name || typeof max_score !== "number") continue;
-        await Criteria.createCriteria({ name, max_score });
-      }
-      res.status(201).json({ status: "success", message: "Import tiêu chí thành công." });
-    } catch (err) {
-      console.error("Error importing criterias:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 }

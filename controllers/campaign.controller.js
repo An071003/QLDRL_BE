@@ -1,119 +1,71 @@
-const db = require('../config/db');
-const Campaign = require("../models/campaignModel");
-const Semester = require('../models/semesterModel');
+const { Campaign } = require("../models");
 
 class CampaignController {
+  // Get all campaigns
   static async getAllCampaigns(req, res) {
     try {
-      const campaigns = await Campaign.selectAllCampaigns();
-      res.status(200).json({ status: "success", data: { campaigns } });
+      const campaigns = await Campaign.findAll();
+      res.status(200).json({ campaigns });
     } catch (err) {
-      console.error("Error fetching campaigns:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
+  // Get a campaign by ID
   static async getCampaignById(req, res) {
-    const { id } = req.params;
     try {
-      const campaign = await Campaign.findById(id);
+      const { id } = req.params;
+      const campaign = await Campaign.findByPk(id);
       if (!campaign) {
-        return res.status(404).json({ message: "Chiến dịch không tồn tại." });
+        return res.status(404).json({ message: "Campaign not found" });
       }
-      res.status(200).json({ status: "success", data: { campaign } });
+      res.status(200).json({ campaign });
     } catch (err) {
-      console.error("Error fetching campaign by id:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
+  // Create a new campaign
   static async createCampaign(req, res) {
-    const { name, max_score, criteria_id, is_negative, negativescore } = req.body;
     try {
-      const semesterResult = await Semester.selectthelastid();
-      const semesterId = semesterResult[0]?.id;
-      if (!semesterId) {
-        return res.status(400).json({ message: "Không tìm thấy học kỳ." });
-      }
-
-      await Campaign.createCampaign({ name, max_score, criteria_id, is_negative, negativescore, semester: semesterId });
-      res.status(201).json({ status: "success", message: "Tạo chiến dịch thành công." });
+      const { name, start_date, end_date } = req.body;
+      const newCampaign = await Campaign.create({ name, start_date, end_date });
+      res.status(201).json({ campaign: newCampaign });
     } catch (err) {
-      console.error("Error creating campaign:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
+  // Update a campaign
   static async updateCampaign(req, res) {
-    const { id } = req.params;
-    const { name, max_score, criteria_id, negativescore } = req.body;
     try {
-      const campaign = await Campaign.findById(id);
+      const { id } = req.params;
+      const { name, start_date, end_date } = req.body;
+      const campaign = await Campaign.findByPk(id);
       if (!campaign) {
-        return res.status(404).json({ message: "Chiến dịch không tồn tại." });
+        return res.status(404).json({ message: "Campaign not found" });
       }
-
-      await Campaign.updateCampaign(id, { name, max_score, criteria_id, negativescore });
-      res.status(200).json({ status: "success", message: "Cập nhật chiến dịch thành công." });
+      await campaign.update({ name, start_date, end_date });
+      res.status(200).json({ campaign });
     } catch (err) {
-      console.error("Error updating campaign:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
+  // Delete a campaign
   static async deleteCampaign(req, res) {
-    const { id } = req.params;
     try {
-      const campaign = await Campaign.findById(id);
+      const { id } = req.params;
+      const campaign = await Campaign.findByPk(id);
       if (!campaign) {
-        return res.status(404).json({ message: "Chiến dịch không tồn tại." });
+        return res.status(404).json({ message: "Campaign not found" });
       }
-      await Campaign.deleteCampaign(id);
-      res.status(200).json({ status: "success", message: "Xóa chiến dịch thành công." });
+      await campaign.destroy();
+      res.status(200).json({ message: "Campaign deleted successfully" });
     } catch (err) {
-      console.error("Error deleting campaign:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
-
-  static async importCampaigns(req, res) {
-    const campaigns = req.body;
-    if (!Array.isArray(campaigns) || campaigns.length === 0) {
-      return res.status(400).json({ message: "Danh sách chiến dịch không hợp lệ." });
-    }
-
-    try {
-      const semesterResult = await Semester.selectthelastid();
-      const semesterId = semesterResult[0]?.id;
-      if (!semesterId) {
-        return res.status(400).json({ message: "Không tìm thấy học kỳ." });
-      }
-
-      for (const { name, max_score, criteria_id, is_negative, negativescore } of campaigns) {
-        if (!name || typeof max_score !== "number" || !criteria_id) continue;
-        await Campaign.createCampaign({ name, max_score, criteria_id, is_negative, negativescore, semester: semesterId });
-      }
-      res.status(201).json({ status: "success", message: "Import chiến dịch thành công." });
-    } catch (err) {
-      console.error("Error importing campaigns:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
-    }
-  }
-
-  static async getAllCampaignsBySemester(req, res) {
-    try {
-      const semesterResult = await Semester.selectthelastid();
-      const semesterId = semesterResult[0]?.id;
-      if (!semesterId) {
-        return res.status(400).json({ message: "Không tìm thấy học kỳ." });
-      }
-      const campaigns = await Campaign.selectAllCampaignsBySemester(semesterId);
-      res.status(200).json({ status: "success", data: { campaigns } });
-    } catch (err) {
-      console.error("Error fetching campaigns by semester:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
-    }
-  };
 }
 
 module.exports = CampaignController;
