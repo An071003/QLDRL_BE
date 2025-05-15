@@ -6,13 +6,15 @@ const authRoutes = require("./routers/auth.routes");
 const roleRoutes = require("./routers/role.routes")
 const userRoutes = require("./routers/user.routes");
 const permissionRoutes = require("./routers/permission.routes");
-const rolePermissionRoutes = require("./routers/rolePermission.routes")
+const rolePermissionRoutes = require("./routers/rolePermission.routes");
+const facultyRoutes = require('./routers/faculty.routes');
+const classRoutes = require('./routers/class.routes');
 // const criteriaRoutes = require("./routers/criteriaRoutes");
 // const semesterRoutes = require("./routers/semesterRoutes");
 // const campaignRoutes = require("./routers/campaignRoutes");
 // const activityRoutes = require("./routers/activityRoutes");
 // const studentActivityRoutes = require("./routers/studentActivityRoutes");
-// const studentRoutes = require("./routers/studentRouter");
+const studentRoutes = require("./routers/student.routes");
 
 const app = express();
 
@@ -25,7 +27,9 @@ app.use("/api/roles", roleRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/role-permissions', rolePermissionRoutes);
 app.use("/api/users", userRoutes);
-// app.use("/api/students", studentRoutes);
+app.use("/api/students", studentRoutes);
+app.use('/api/faculties', facultyRoutes);
+app.use('/api/classes', classRoutes);
 // app.use('/api/criteria', criteriaRoutes);
 // app.use('/api/semesters', semesterRoutes);
 // app.use("/api/campaigns", campaignRoutes);
