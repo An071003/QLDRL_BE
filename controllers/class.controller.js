@@ -1,69 +1,64 @@
-const { Class } = require("../models");
+const Class = require('../models/class.model');
+const Faculty = require('../models/faculty.model');
 
 class ClassController {
-  // Get all classes
   static async getAllClasses(req, res) {
     try {
-      const classes = await Class.findAll();
-      res.status(200).json({ classes });
+      const classes = await Class.findAll({ include: Faculty });
+      res.status(200).json({ status: 'success', data: { classes } });
     } catch (err) {
-      res.status(500).json({ message: "Server error", error: err.message });
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
 
-  // Get a class by ID
   static async getClassById(req, res) {
     try {
-      const { id } = req.params;
-      const classData = await Class.findByPk(id);
-      if (!classData) {
-        return res.status(404).json({ message: "Class not found" });
+      const classItem = await Class.findByPk(req.params.id, { include: Faculty });
+      if (!classItem) {
+        return res.status(404).json({ message: 'Không tìm thấy lớp.' });
       }
-      res.status(200).json({ class: classData });
+      res.status(200).json({ status: 'success', data: { class: classItem } });
     } catch (err) {
-      res.status(500).json({ message: "Server error", error: err.message });
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
 
-  // Create a new class
   static async createClass(req, res) {
     try {
-      const { name, advisor_id } = req.body;
-      const newClass = await Class.create({ name, advisor_id });
-      res.status(201).json({ class: newClass });
+      const { name, faculty_id, cohort, class_leader_id, advisor_id } = req.body;
+      const newClass = await Class.create({ name, faculty_id, cohort, class_leader_id, advisor_id });
+      res.status(201).json({ status: 'success', data: { class: newClass } });
     } catch (err) {
-      res.status(500).json({ message: "Server error", error: err.message });
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
 
-  // Update a class
   static async updateClass(req, res) {
     try {
-      const { id } = req.params;
-      const { name, advisor_id } = req.body;
-      const classData = await Class.findByPk(id);
-      if (!classData) {
-        return res.status(404).json({ message: "Class not found" });
+      const { name, faculty_id, cohort, class_leader_id, advisor_id } = req.body;
+      const classItem = await Class.findByPk(req.params.id);
+      if (!classItem) {
+        return res.status(404).json({ message: 'Không tìm thấy lớp.' });
       }
-      await classData.update({ name, advisor_id });
-      res.status(200).json({ class: classData });
+
+      await classItem.update({ name, faculty_id, cohort, class_leader_id, advisor_id });
+      res.status(200).json({ status: 'success', data: { class: classItem } });
     } catch (err) {
-      res.status(500).json({ message: "Server error", error: err.message });
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
 
-  // Delete a class
   static async deleteClass(req, res) {
     try {
-      const { id } = req.params;
-      const classData = await Class.findByPk(id);
-      if (!classData) {
-        return res.status(404).json({ message: "Class not found" });
+      const classItem = await Class.findByPk(req.params.id);
+      if (!classItem) {
+        return res.status(404).json({ message: 'Không tìm thấy lớp.' });
       }
-      await classData.destroy();
-      res.status(200).json({ message: "Class deleted successfully" });
+
+      await classItem.destroy();
+      res.status(200).json({ status: 'success', message: 'Đã xóa lớp thành công.' });
     } catch (err) {
-      res.status(500).json({ message: "Server error", error: err.message });
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
 }

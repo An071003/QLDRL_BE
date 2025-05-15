@@ -1,22 +1,21 @@
 const express = require("express");
 const FacultyController = require("../controllers/faculty.controller");
-const authMiddleware = require("../middleware/authMiddleware");
-
+const { authenticateUser, authorizeRoles, authorizePermissions } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 // Get all faculties
-router.get("/", authMiddleware, FacultyController.getAllFaculties);
+router.get("/", authenticateUser, authorizeRoles('admin'), authorizePermissions('faculties:view'), FacultyController.getAllFaculties);
 
 // Get a faculty by ID
-router.get("/:id", authMiddleware, FacultyController.getFacultyById);
+router.get("/:id", FacultyController.getFacultyById);
 
 // Create a new faculty
-router.post("/", authMiddleware, FacultyController.createFaculty);
+router.post("/", FacultyController.createFaculty);
 
 // Update a faculty
-router.put("/:id", authMiddleware, FacultyController.updateFaculty);
+router.put("/:id", FacultyController.updateFaculty);
 
 // Delete a faculty
-router.delete("/:id", authMiddleware, FacultyController.deleteFaculty);
+router.delete("/:id", FacultyController.deleteFaculty);
 
 module.exports = router;

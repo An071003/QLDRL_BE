@@ -1,22 +1,21 @@
 const express = require("express");
 const AdvisorController = require("../controllers/advisor.controller");
-const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 // Get all advisors
-router.get("/", authMiddleware, AdvisorController.getAllAdvisors);
+router.get("/", AdvisorController.getAllAdvisors);
 
 // Get an advisor by ID
-router.get("/:id", authMiddleware, AdvisorController.getAdvisorById);
+router.get("/:id", AdvisorController.getAdvisorById);
 
 // Create a new advisor
-router.post("/", authMiddleware, AdvisorController.createAdvisor);
+router.post("/", AdvisorController.createAdvisor);
 
 // Update an advisor
-router.put("/:id", authMiddleware, AdvisorController.updateAdvisor);
+router.put("/:id", AdvisorController.updateAdvisor);
 
 // Delete an advisor
-router.delete("/:id", authMiddleware, AdvisorController.deleteAdvisor);
+router.delete("/:id", AdvisorController.deleteAdvisor);
 
 module.exports = router;

@@ -15,7 +15,7 @@ const departmentOfficerRoutes = require("./routers/departmentOfficer.routes");
 const criteriaRoutes = require("./routers/criteria.routes");
 const campaignRoutes = require("./routers/campaign.routes");
 const activityRoutes = require("./routers/activity.routes");
-const studentActivityRoutes = require("./routers/studentActivity.routes");
+// const studentActivityRoutes = require("./routers/studentActivity.routes");
 const studentRoutes = require("./routers/student.routes");
 
 const app = express();
@@ -37,7 +37,7 @@ app.use("/api/department-officers", departmentOfficerRoutes);
 app.use('/api/criteria', criteriaRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/activities', activityRoutes);
-app.use('/api/student-activities', studentActivityRoutes);
+// app.use('/api/student-activities', studentActivityRoutes);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server running on http://localhost:${process.env.PORT}`);
