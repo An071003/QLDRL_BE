@@ -1,5 +1,5 @@
-const Student = require('../models/studentModel');
-const User = require('../models/userModel');
+const Student = require('../models/student.model');
+const User = require('../models/user.model');
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const emailMiddleware = require("../middlewares/emailMiddleware");
@@ -11,7 +11,7 @@ class StudentController {
 
   static async getAllStudents(req, res) {
     try {
-      const students = await Student.getAllStudents();
+      const students = await Student.findAll();
       res.status(200).json({ status: "success", data: { students } });
     } catch (err) {
       res.status(500).json({ message: "Lỗi máy chủ." });
@@ -20,7 +20,7 @@ class StudentController {
 
   static async getStudentById(req, res) {
     try {
-      const student = await Student.findById(req.params.id);
+      const student = await Student.findByPk(req.params.id);
       if (!student) {
         return res.status(404).json({ message: "Không tìm thấy sinh viên." });
       }
@@ -32,22 +32,22 @@ class StudentController {
 
   static async createStudent(req, res) {
     try {
-      const { id, student_name, faculty, course, class: className } = req.body;
+      const { id, student_name, faculty, course, className } = req.body;
 
       const email = `${id}@gm.uit.edu.vn`;
       const role = 'student';
       const plainPassword = StudentController.generateRandomPassword();
       const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-      const existingUser = await User.findByEmail(email);
+      const existingUser = await User.findOne({ where: { email } });
       if (existingUser) {
         return res.status(400).json({ message: "User với email đã tồn tại." });
       }
 
-      const userResult = await User.createUser({ name: id, email, hashedPassword, role });
-      const userId = userResult.insertId;
+      const userResult = await User.create({ name: id, email, password: hashedPassword, role });
+      const userId = userResult.id;
 
-      await Student.createStudent({ id, student_name, faculty, course, className, userId });
+      await Student.create({ student_id: id, student_name, faculty, course, class: className, user_id: userId });
 
       const subject = "Thông tin tài khoản sinh viên";
       const htmlContent = `
@@ -96,14 +96,15 @@ class StudentController {
   static async deleteStudent(req, res) {
     try {
       const studentId = req.params.id;
-      const userId = await Student.findUserIdByStudentId(studentId);
+      const student = await Student.findByPk(studentId);
 
-      if (!userId) {
+      if (!student) {
         return res.status(404).json({ message: "Không tìm thấy sinh viên." });
       }
 
-      await Student.deleteStudentById(studentId);
-      await User.deleteUser(userId);
+      const userId = student.user_id;
+      await Student.destroy({ where: { student_id: studentId } });
+      await User.destroy({ where: { id: userId } });
 
       res.status(200).json({ status: "success", message: "Xóa sinh viên thành công." });
     } catch (err) {
@@ -114,14 +115,16 @@ class StudentController {
   static async updateStudent(req, res) {
     try {
       const studentId = req.params.id;
-      const { student_name, faculty, course, class: className, status } = req.body;
+      const { student_name, faculty, course, phone, className, status } = req.body;
 
-      const existingStudent = await Student.findById(studentId);
+      const existingStudent = await Student.findByPk(studentId);
       if (!existingStudent) {
         return res.status(404).json({ message: "Không tìm thấy sinh viên." });
       }
 
-      await Student.updateStudent(studentId, { student_name, faculty, course, className, status });
+      await Student.update({ student_name, faculty, course, phone, class: className, status }, {
+        where: { student_id: studentId }
+      });
 
       res.status(200).json({ status: "success", message: "Cập nhật sinh viên thành công." });
     } catch (err) {
@@ -142,7 +145,7 @@ class StudentController {
       const failed = [];
   
       for (const s of students) {
-        const { id, student_name, faculty, course, class: className } = s;
+        const { id, student_name, faculty, course, className } = s;
   
         if (!id || !student_name || !className) {
           failed.push({ id, name: student_name, reason: "Thiếu thông tin bắt buộc" });
@@ -150,7 +153,7 @@ class StudentController {
         }
   
         const email = `${id}@gm.uit.edu.vn`;
-        const existingUser = await User.findByEmail(email);
+        const existingUser = await User.findOne({ where: { email } });
   
         if (existingUser) {
           failed.push({ id, name: student_name, reason: "Email đã tồn tại" });
@@ -182,12 +185,12 @@ class StudentController {
       const usersToInsert = validStudents.map(s => ({
         name: s.id,
         email: s.email,
-        hashedPassword: s.hashedPassword,
+        password: s.hashedPassword,
         role: 'student'
       }));
       
-      const insertResults = await User.bulkCreateUsers(usersToInsert);
-      const startInsertId = insertResults.insertId;
+      const insertResults = await User.bulkCreate(usersToInsert);
+      const startInsertId = insertResults[0].id;
   
       const pLimit = require('p-limit');
       const limit = pLimit(20);
@@ -197,13 +200,13 @@ class StudentController {
           const newUserId = startInsertId + index;
   
           try {
-            await Student.createStudent({
-              id: s.id,
+            await Student.create({
+              student_id: s.id,
               student_name: s.student_name,
-              className: s.className,
+              class: s.className,
               course: s.course,
               faculty: s.faculty,
-              userId: newUserId
+              user_id: newUserId
             });
   
             const htmlContent = `

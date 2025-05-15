@@ -1,15 +1,15 @@
-// const express = require("express");
-// const StudentController = require("../controllers/studentController");
-// const { authenticateUser, authorizeRoles } = require("../middlewares/authMiddleware");
+const express = require("express");
+const StudentController = require("../controllers/student.controller");
+const { authenticateUser, authorizeRoles } = require("../middlewares/authMiddleware");
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.get("/", authenticateUser, authorizeRoles("admin", "lecturer"), StudentController.getAllStudents);
-// router.get("/:id", authenticateUser, authorizeRoles("admin", "lecturer"), StudentController.getStudentById);
-// router.post("/", authenticateUser, authorizeRoles("admin"), StudentController.createStudent);
-// router.post("/import", authenticateUser, authorizeRoles("admin"), StudentController.createStudentsFromExcel)
-// router.put("/:id", authenticateUser, authorizeRoles("admin"), StudentController.updateStudent);
-// router.delete("/:id", authenticateUser, authorizeRoles("admin"), StudentController.deleteStudent);
-// router.get("/:id/activities", authenticateUser, authorizeRoles("admin", "lecturer"), StudentController.getStudentActivitiesByLatestSemester);
+router.get("/", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer"), StudentController.getAllStudents);
+router.get("/:id", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer", "student"), StudentController.getStudentById);
+router.post("/", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.createStudent);
+router.post("/import", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.createStudentsFromExcel)
+router.put("/:id", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.updateStudent);
+router.delete("/:id", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.deleteStudent);
+router.get("/:id/activities", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer"), StudentController.getStudentActivitiesByLatestSemester);
 
-// module.exports = router;
+module.exports = router;

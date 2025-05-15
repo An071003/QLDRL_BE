@@ -16,6 +16,7 @@ const criteriaRoutes = require("./routers/criteria.routes");
 const campaignRoutes = require("./routers/campaign.routes");
 const activityRoutes = require("./routers/activity.routes");
 const studentActivityRoutes = require("./routers/studentActivity.routes");
+const studentRoutes = require("./routers/student.routes");
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/faculties", facultyRoutes);
 app.use("/api/advisors", advisorRoutes);
 app.use("/api/classes", classRoutes);
+app.use("/api/students", studentRoutes);
 app.use("/api/department-officers", departmentOfficerRoutes);
 app.use('/api/criteria', criteriaRoutes);
 app.use('/api/campaigns', campaignRoutes);
