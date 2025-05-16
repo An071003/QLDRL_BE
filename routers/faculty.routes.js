@@ -12,6 +12,9 @@ router.get("/:id", FacultyController.getFacultyById);
 // Create a new faculty
 router.post("/", FacultyController.createFaculty);
 
+// Import faculties from Excel
+router.post("/import", FacultyController.importFaculties);
+
 // Update a faculty
 router.put("/:id", FacultyController.updateFaculty);
 
