@@ -1,15 +1,24 @@
-// const express = require('express');
-// const CampaignController = require('../controllers/campaignController');
-// const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');
+const express = require("express");
+const CampaignController = require("../controllers/campaign.controller");
+const { authenticateUser, authorizeRoles, authorizePermissions } = require("../middlewares/authMiddleware");
+const router = express.Router();
 
-// const router = express.Router();
+// Get all campaigns
+router.get("/", authenticateUser, authorizeRoles("admin"), CampaignController.getAllCampaigns);
 
-// router.get('/', authenticateUser, authorizeRoles('admin', 'lecturer'), CampaignController.getAllCampaigns);
-// router.get('/semester', authenticateUser, authorizeRoles('admin', 'lecturer'), CampaignController.getAllCampaignsBySemester);
-// router.get('/:id', authenticateUser, authorizeRoles('admin'), CampaignController.getCampaignById);
-// router.post('/', authenticateUser, authorizeRoles('admin'), CampaignController.createCampaign);
-// router.put('/:id', authenticateUser, authorizeRoles('admin'), CampaignController.updateCampaign);
-// router.delete('/:id', authenticateUser, authorizeRoles('admin'), CampaignController.deleteCampaign);
-// router.post('/import', authenticateUser, authorizeRoles('admin'), CampaignController.importCampaigns);
+// Get a campaign by ID
+router.get("/:id", authenticateUser, authorizeRoles("admin"), CampaignController.getCampaignById);
 
-// module.exports = router;
+// Create a new campaign
+router.post("/", authenticateUser, authorizeRoles("admin"), CampaignController.createCampaign);
+
+// Update a campaign
+router.put("/:id", authenticateUser, authorizeRoles("admin"), CampaignController.updateCampaign);
+
+// Delete a campaign
+router.delete("/:id", authenticateUser, authorizeRoles("admin"), CampaignController.deleteCampaign);
+
+// Import campaigns from an Excel file
+router.post('/import', authenticateUser, authorizeRoles('admin'), CampaignController.importCampaigns);
+
+module.exports = router;

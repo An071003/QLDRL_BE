@@ -255,7 +255,75 @@ class StudentActivityController {
     }
   }
 
+  // Get all student activities
+  static async getAllStudentActivities(req, res) {
+    try {
+      const studentActivities = await StudentActivity.findAll();
+      res.status(200).json({ studentActivities });
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
 
+  // Get a student activity by ID
+  static async getStudentActivityById(req, res) {
+    try {
+      const { id } = req.params;
+      const studentActivity = await StudentActivity.findByPk(id);
+      if (!studentActivity) {
+        return res.status(404).json({ message: "Student activity not found" });
+      }
+      res.status(200).json({ studentActivity });
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
+
+  // Create a new student activity
+  static async createStudentActivity(req, res) {
+    try {
+      const { student_id, activity_id, score } = req.body;
+      const newStudentActivity = await StudentActivity.create({
+        student_id,
+        activity_id,
+        score,
+      });
+      res.status(201).json({ studentActivity: newStudentActivity });
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
+
+  // Update a student activity
+  static async updateStudentActivity(req, res) {
+    try {
+      const { id } = req.params;
+      const { student_id, activity_id, score } = req.body;
+      const studentActivity = await StudentActivity.findByPk(id);
+      if (!studentActivity) {
+        return res.status(404).json({ message: "Student activity not found" });
+      }
+      await studentActivity.update({ student_id, activity_id, score });
+      res.status(200).json({ studentActivity });
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
+
+  // Delete a student activity
+  static async deleteStudentActivity(req, res) {
+    try {
+      const { id } = req.params;
+      const studentActivity = await StudentActivity.findByPk(id);
+      if (!studentActivity) {
+        return res.status(404).json({ message: "Student activity not found" });
+      }
+      await studentActivity.destroy();
+      res.status(200).json({ message: "Student activity deleted successfully" });
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
 }
 
 module.exports = StudentActivityController;

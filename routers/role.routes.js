@@ -4,7 +4,7 @@ const { authenticateUser, authorizePermissions, authorizeRoles } = require('../m
 
 const router = express.Router();
 
-router.get('/', authenticateUser, authorizeRoles('admin'), authorizePermissions('role:view'), RoleController.getAllRoles);
+router.get('/', RoleController.getAllRoles);
 router.get('/:id', authenticateUser, authorizeRoles('admin'), authorizePermissions('role:view'), RoleController.getRolesById);
 router.post('/', authenticateUser, authorizeRoles('admin'), authorizePermissions('role:create'), RoleController.createRole);
 router.put('/:id', authenticateUser, authorizeRoles('admin'), authorizePermissions('role:update'), RoleController.updateRole);

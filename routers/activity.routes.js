@@ -1,14 +1,24 @@
-// const express = require('express');
-// const ActivityController = require('../controllers/activityController');
-// const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');
+const express = require("express");
+const ActivityController = require("../controllers/activity.controller");
+const { authenticateUser, authorizeRoles, authorizePermissions } = require("../middlewares/authMiddleware");
+const router = express.Router();
 
-// const router = express.Router();
+// Get all activities
+router.get("/", authenticateUser, authorizeRoles("admin"), ActivityController.getAllActivities);
 
-// router.get('/', authenticateUser, authorizeRoles('admin', 'lecturer'), ActivityController.getAllActivities);
-// router.get('/:id', authenticateUser, authorizeRoles('admin'), ActivityController.getActivityById);
-// router.post('/', authenticateUser, authorizeRoles('admin'), ActivityController.createActivity);
-// router.put('/:id', authenticateUser, authorizeRoles('admin'), ActivityController.updateActivity);
-// router.delete('/:id', authenticateUser, authorizeRoles('admin'), ActivityController.deleteActivity);
-// router.post('/import', authenticateUser, authorizeRoles('admin'), ActivityController.importActivities);
+// Get an activity by ID
+router.get("/:id", authenticateUser, authorizeRoles("admin"), ActivityController.getActivityById);
 
-// module.exports = router;
+// Create a new activity
+router.post("/", authenticateUser, authorizeRoles("admin"), ActivityController.createActivity);
+
+// Update an activity
+router.put("/:id", authenticateUser, authorizeRoles("admin"), ActivityController.updateActivity);
+
+// Delete an activity
+router.delete("/:id", authenticateUser, authorizeRoles("admin"), ActivityController.deleteActivity);
+
+// Import activities
+router.post("/import", authenticateUser, authorizeRoles("admin"), ActivityController.importActivities);
+
+module.exports = router;
