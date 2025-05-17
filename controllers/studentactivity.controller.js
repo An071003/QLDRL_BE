@@ -1,16 +1,44 @@
-const Activity = require('../models/activityModel.js');
-const Semester = require('../models/semesterModel.js');
-const StudentActivity = require('../models/studentactivityModel.js');
+const Activity = require('../models/activity.model.js');
+// const Semester = require('../models/semesterModel.js');
+const StudentActivity = require('../models/studentActivity.model.js');
 const db = require('../config/db.js');
+const { Op } = require('sequelize');
+const Student = require('../models/student.model.js');
+const Class = require('../models/class.model.js');
+const Campaign = require('../models/campaign.model.js');
 
 class StudentActivityController {
   static async getStudentsByActivity(req, res) {
     const { activityId } = req.params;
     try {
-      const students = await StudentActivity.getStudentsByActivity(activityId);
+      const students = await StudentActivity.findAll({
+        where: { activity_id: activityId },
+        include: [
+          {
+            model: Student,
+            attributes: ['student_id', 'student_name'],
+            include: [
+              {
+                model: Class,
+                attributes: ['name']
+              }
+            ]
+          },
+          {
+            model: Activity,
+            attributes: ['id', 'name', 'point', 'status'],
+            include: [
+              {
+                model: Campaign,
+                attributes: ['name'],
+              },
+            ],
+          },
+        ],
+      });
+
       res.status(200).json({ status: 'success', data: { students } });
     } catch (err) {
-      console.error('Error getting students for activity:', err);
       res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
@@ -18,15 +46,39 @@ class StudentActivityController {
   static async getStudentsNotInActivity(req, res) {
     const { activityId } = req.params;
     try {
-      const semesterResult = await Semester.selectthelastid();
-      if (semesterResult.length === 0) {
-        return res.status(400).json({ message: 'Không tìm thấy học kỳ.' });
-      }
+      // Lấy danh sách ID sinh viên đã tham gia hoạt động
+      const participatedRecords = await StudentActivity.findAll({
+        where: { activity_id: activityId },
+        attributes: ['student_id'],
+      });
+      const participatedIds = participatedRecords.map(record => record.student_id);
 
-      const semester = semesterResult[0];
-      const students = await StudentActivity.getStudentsNotInActivity(activityId, semester);
+      // Tìm các sinh viên KHÔNG nằm trong danh sách đã tham gia
+      const students = await Student.findAll({
+        where: {
+          student_id: {
+            [Op.notIn]: participatedIds.length > 0 ? participatedIds : [''],
+          },
+        },
+        attributes: ['student_id', 'student_name'],
+        include: [
+          {
+            model: Class,
+            attributes: ['name'],
+          },
+        ],
+      });
 
-      res.status(200).json({ status: 'success', data: { students } });
+      res.status(200).json({
+        status: 'success',
+        data: {
+          students: students.map((s) => ({
+            student_id: s.student_id,
+            student_name: s.student_name,
+            class: s.Class?.name || null,
+          })),
+        },
+      });
     } catch (err) {
       console.error('Error fetching students not in activity:', err);
       res.status(500).json({ message: 'Lỗi máy chủ.' });
@@ -36,28 +88,26 @@ class StudentActivityController {
   static async addStudent(req, res) {
     const { studentIds } = req.body;
     const { activityId } = req.params;
+    const register_id = req.user.id;
 
     try {
-      const semesterResult = await Semester.selectthelastid();
+      const pointResult = await Activity.findOne({
+        where: { id: activityId },
+        attributes: ['point'],
+      });
 
-      if (semesterResult.length === 0) {
-        return res.status(400).json({ message: 'Không tìm thấy học kỳ.' });
-      }
-
-      const point = await Activity.getPoint(activityId);
-
-      if (point.length === 0) {
+      if (!pointResult) {
         return res.status(400).json({ message: 'Không tìm thấy điểm cho hoạt động này.' });
       }
 
       const studentList = studentIds.map(student_id => ({
         student_id,
         activity_id: activityId,
-        semester: semesterResult[0].id,
-        awarded_score: point,
+        awarded_score: pointResult.point,
+        register_id
       }));
 
-      await StudentActivity.addStudentToActivity(studentList);
+      await StudentActivity.bulkCreate(studentList, { ignoreDuplicates: true });
 
       res.status(201).json({ status: 'success', message: 'Thêm sinh viên vào hoạt động thành công.' });
     } catch (err) {
@@ -70,38 +120,56 @@ class StudentActivityController {
     const { activityId } = req.params;
     const { participated, studentId } = req.body;
 
+    if (!activityId || !studentId || typeof participated !== 'boolean') {
+      return res.status(400).json({ message: 'Dữ liệu đầu vào không hợp lệ.' });
+    }
+
     try {
-      const semesterResult = await Semester.selectthelastid();
-      if (semesterResult.length === 0) {
-        return res.status(400).json({ message: 'Không tìm thấy học kỳ.' });
+      const [updatedCount] = await StudentActivity.update(
+        { participated },
+        {
+          where: {
+            student_id: studentId,
+            activity_id: activityId,
+          },
+        }
+      );
+
+      if (updatedCount === 0) {
+        return res.status(404).json({ message: 'Không tìm thấy bản ghi để cập nhật.' });
       }
 
-      const semester = semesterResult[0].id;
-
-      await StudentActivity.updateParticipationStatus(studentId, activityId, semester, participated);
-
-      res.status(200).json({ status: 'success', message: 'Cập nhật trạng thái tham gia thành công.' });
+      return res.status(200).json({
+        status: 'success',
+        message: 'Cập nhật trạng thái tham gia thành công.',
+      });
     } catch (err) {
-      console.error('Error updating participation status:', err);
-      res.status(500).json({ message: 'Lỗi máy chủ.' });
+      console.error('❌ Lỗi khi cập nhật trạng thái tham gia:', err);
+      return res.status(500).json({ message: 'Đã xảy ra lỗi máy chủ.' });
     }
   }
 
   static async removeStudent(req, res) {
     const { activityId, studentIds } = req.params;
-
     try {
-      const semesterResult = await Semester.selectthelastid();
-      if (semesterResult.length === 0) {
-        return res.status(400).json({ message: 'Không tìm thấy học kỳ.' });
-      }
-      const semester = semesterResult[0].id;
+      const deletedCount = await StudentActivity.destroy({
+        where: {
+          activity_id: activityId,
+          student_id: studentIds,
+        },
+      });
 
-      await StudentActivity.removeStudentFromActivity(studentIds, activityId, semester);
-      res.status(200).json({ status: 'success', message: 'Xóa sinh viên khỏi hoạt động thành công.' });
+      if (deletedCount === 0) {
+        return res.status(404).json({ message: 'Không tìm thấy sinh viên để xóa khỏi hoạt động.' });
+      }
+
+      return res.status(200).json({
+        status: 'success',
+        message: `Đã xóa ${deletedCount} sinh viên khỏi hoạt động.`,
+      });
     } catch (err) {
-      console.error('Error removing student from activity:', err);
-      res.status(500).json({ message: 'Lỗi máy chủ.' });
+      console.error('❌ Lỗi khi xóa sinh viên khỏi hoạt động:', err);
+      return res.status(500).json({ message: 'Đã xảy ra lỗi máy chủ.' });
     }
   }
 
@@ -114,46 +182,58 @@ class StudentActivityController {
     }
 
     try {
-      const semesterResult = await Semester.selectthelastid();
-      if (semesterResult.length === 0) {
-        return res.status(400).json({ message: 'Không tìm thấy học kỳ.' });
-      }
+      const activity = await Activity.findByPk(activityId, {
+        attributes: ['point']
+      });
 
-      const point = await Activity.getPoint(activityId);
-      if (point.length === 0) {
+      if (!activity) {
         return res.status(400).json({ message: 'Không tìm thấy điểm cho hoạt động này.' });
       }
 
-      const [dbStudents] = await db.promise().query(
-        `SELECT id AS student_id FROM students WHERE id IN (?)`,
-        [students.map(s => s.mssv)]
-      );
+      const mssvList = students.map(s => s.mssv);
 
-      if (dbStudents.length === 0) {
+      const existingStudents = await Student.findAll({
+        where: { student_id: mssvList },
+        attributes: ['student_id']
+      });
+
+      if (existingStudents.length === 0) {
         return res.status(404).json({ message: 'Không tìm thấy sinh viên nào trong hệ thống.' });
       }
 
-      const existingStudents = await StudentActivity.getStudent(activityId, semesterResult[0].id, dbStudents);
-      const existingIds = new Set(existingStudents.map(row => row.student_id));
-      const filteredStudents = dbStudents.filter(s => !existingIds.has(s.student_id));
+      const existingStudentIds = existingStudents.map(s => s.student_id);
+      const alreadyAdded = await StudentActivity.findAll({
+        where: {
+          activity_id: activityId,
+          student_id: existingStudentIds
+        },
+        attributes: ['student_id']
+      });
 
-      if (filteredStudents.length === 0) {
+      const alreadyAddedIds = new Set(alreadyAdded.map(s => s.student_id));
+      const newStudents = existingStudentIds.filter(id => !alreadyAddedIds.has(id));
+
+      if (newStudents.length === 0) {
         return res.status(201).json({ success: true, message: 'Tất cả sinh viên đã tham gia hoạt động này.' });
       }
 
-      const studentList = filteredStudents.map(s => ({
-        student_id: s.student_id,
+      const studentActivities = newStudents.map(student_id => ({
+        student_id,
         activity_id: activityId,
-        semester: semesterResult[0].id,
-        awarded_score: point,
+        awarded_score: activity.point,
+        participated: true
       }));
 
-      await StudentActivity.addStudentToActivity(studentList);
+      await StudentActivity.bulkCreate(studentActivities);
 
-      res.status(201).json({ success: true, message: 'Import sinh viên thành công.' });
+      return res.status(201).json({
+        success: true,
+        message: 'Import sinh viên thành công.',
+        added: studentActivities.length
+      });
     } catch (err) {
-      console.error('Lỗi import sinh viên:', err);
-      res.status(500).json({ message: 'Lỗi máy chủ.' });
+      console.error('❌ Lỗi import sinh viên:', err);
+      return res.status(500).json({ message: 'Đã xảy ra lỗi máy chủ.' });
     }
   }
 
@@ -196,8 +276,6 @@ class StudentActivityController {
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
-
-
 
   static async getActivityByStudent(req, res) {
     const { studentId } = req.params;
@@ -255,21 +333,35 @@ class StudentActivityController {
     }
   }
 
-  // Get all student activities
-  static async getAllStudentActivities(req, res) {
-    try {
-      const studentActivities = await StudentActivity.findAll();
-      res.status(200).json({ studentActivities });
-    } catch (err) {
-      res.status(500).json({ message: "Server error", error: err.message });
-    }
-  }
 
-  // Get a student activity by ID
-  static async getStudentActivityById(req, res) {
+  static async getStudentActivityByStudentId(req, res) {
     try {
-      const { id } = req.params;
-      const studentActivity = await StudentActivity.findByPk(id);
+      const { activityId } = req.params;
+      const studentActivity = await StudentActivity.findByPk(activityId, {
+        where: { activity_id: activityId },
+        include: [
+          {
+            model: Student,
+            attributes: ['student_id', 'student_name'],
+            include: [
+              {
+                model: Class,
+                attributes: ['name']
+              }
+            ]
+          },
+          {
+            model: Activity,
+            attributes: ['id', 'name', 'point', 'status'],
+            include: [
+              {
+                model: Campaign,
+                attributes: ['name'],
+              },
+            ],
+          },
+        ],
+      });
       if (!studentActivity) {
         return res.status(404).json({ message: "Student activity not found" });
       }

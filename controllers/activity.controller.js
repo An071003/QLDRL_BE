@@ -113,7 +113,6 @@ class ActivityController {
   }
 
   // Import activities (import from Excel/JSON)
-  // Import activities (import from Excel/JSON)
   static async importActivities(req, res) {
     const activityList = req.body;
 

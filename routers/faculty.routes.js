@@ -4,7 +4,7 @@ const { authenticateUser, authorizeRoles, authorizePermissions } = require('../m
 const router = express.Router();
 
 // Get all faculties
-router.get("/", authenticateUser, authorizeRoles('admin'), authorizePermissions('faculties:view'), FacultyController.getAllFaculties);
+router.get("/", authenticateUser, authorizeRoles('admin'), FacultyController.getAllFaculties);
 
 // Get a faculty by ID
 router.get("/:id", FacultyController.getFacultyById);
