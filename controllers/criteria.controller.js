@@ -15,13 +15,13 @@ class CriteriaController {
   static async getCriteriaById(req, res) {
     const { id } = req.params;
     try {
-      const criterion = await Criteria.findByPk(id, {
+      const criteria = await Criteria.findByPk(id, {
         attributes: ['id', 'name', 'max_score', 'created_by']
       });
-      if (!criterion) {
+      if (!criteria) {
         return res.status(404).json({ message: "Tiêu chí không tồn tại." });
       }
-      res.status(200).json({ status: "success", data: { criterion } });
+      res.status(200).json({ status: "success", data: { criteria } });
     } catch (err) {
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
@@ -36,9 +36,9 @@ class CriteriaController {
         return res.status(400).json({ message: "Thiếu thông tin." });
       }
 
-      const newCriterion = await Criteria.create({ name, max_score, created_by });
+      const newCriteria = await Criteria.create({ name, max_score, created_by });
 
-      res.status(201).json({ status: "success", data: { criterion: newCriterion } });
+      res.status(201).json({ status: "success", data: { criteria: newCriteria } });
     } catch (err) {
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
@@ -49,11 +49,11 @@ class CriteriaController {
     const { name, max_score } = req.body;
 
     try {
-      const criterion = await Criteria.findByPk(id);
-      if (!criterion) {
+      const criteria = await Criteria.findByPk(id);
+      if (!criteria) {
         return res.status(404).json({ message: "Tiêu chí không tồn tại." });
       }
-      await criterion.update({ name, max_score });
+      await criteria.update({ name, max_score });
 
       res.status(200).json({ status: "success", message: "Cập nhật tiêu chí thành công." });
     } catch (err) {
@@ -65,11 +65,11 @@ class CriteriaController {
     const { id } = req.params;
 
     try {
-      const criterion = await Criteria.findByPk(id);
-      if (!criterion) {
+      const criteria = await Criteria.findByPk(id);
+      if (!criteria) {
         return res.status(404).json({ message: "Tiêu chí không tồn tại." });
       }
-      await criterion.destroy();
+      await criteria.destroy();
 
       res.status(200).json({ status: "success", message: "Xóa tiêu chí thành công." });
     } catch (err) {
@@ -90,18 +90,18 @@ class CriteriaController {
       const failed = [];
       const created_by = req.user && req.user.id ? req.user.id : null;
 
-      for (const criterion of criteriaList) {
-        const { name, max_score } = criterion;
+      for (const criteria of criteriaList) {
+        const { name, max_score } = criteria;
 
         // Validate các trường cần thiết giống như create
         if (!name || max_score === undefined || !created_by) {
-          failed.push({ criterion, reason: "Thiếu thông tin." });
+          failed.push({ criteria, reason: "Thiếu thông tin." });
           continue;
         }
 
         const maxScoreNum = Number(max_score);
         if (isNaN(maxScoreNum) || maxScoreNum < 0) {
-          failed.push({ criterion, reason: "Điểm tối đa phải là số không âm." });
+          failed.push({ criteria, reason: "Điểm tối đa phải là số không âm." });
           continue;
         }
 

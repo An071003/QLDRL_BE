@@ -289,6 +289,42 @@ class AdvisorController {
       return res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
+
+  static async getAdvisorByUserId(req, res) {
+    try {
+      const { userId } = req.params;
+      
+      const advisor = await Advisor.findOne({
+        where: { user_id: userId },
+        include: [
+          {
+            model: Faculty,
+            attributes: ['id', 'name', 'faculty_abbr'],
+          },
+          {
+            model: Class,
+            include: [
+              {
+                model: Faculty,
+              }
+            ]
+          },
+          {
+            model: User,
+            attributes: ['email'],
+          },
+        ],
+      });
+      
+      if (!advisor) {
+        return res.status(404).json({ message: "Advisor not found" });
+      }
+      
+      res.status(200).json({ advisor });
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
 }
 
 module.exports = AdvisorController;

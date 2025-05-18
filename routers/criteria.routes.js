@@ -6,16 +6,16 @@ const router = express.Router();
 // Get all criteria
 router.get("/", authenticateUser, CriteriaController.getAllCriteria);
 
-// Get a criterion by ID
+// Get a criteria by ID
 router.get("/:id", authenticateUser, CriteriaController.getCriteriaById);
 
-// Create a new criterion
+// Create a new criteria
 router.post("/", authenticateUser, CriteriaController.createCriteria);
 
-// Update a criterion
+// Update a criteria
 router.put("/:id", authenticateUser, CriteriaController.updateCriteria);
 
-// Delete a criterion
+// Delete a criteria
 router.delete("/:id", authenticateUser, CriteriaController.deleteCriteria);
 
 // Import criteria from Excel file

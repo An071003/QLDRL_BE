@@ -1,7 +1,7 @@
-const { Activity } = require("../models");
+const { Activity, User } = require("../models");
 
 class ActivityController {
-  // Lấy tất cả hoạt động
+
   static async getAllActivities(req, res) {
     try {
       const activities = await Activity.findAll({
@@ -9,15 +9,29 @@ class ActivityController {
           'id', 'campaign_id', 'name', 'point', 'max_participants',
           'number_students', 'status', 'registration_start', 'registration_end',
           'approver_id', 'approved_at', 'created_by', 'created_at'
+        ],
+        include: [
+          {
+            model: User,
+            as: 'Creator',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'Approver',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          }
         ]
       });
       res.status(200).json({ status: "success", data: { activities } });
     } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
 
-  // Lấy hoạt động theo ID
   static async getActivityById(req, res) {
     const { id } = req.params;
     try {
@@ -26,6 +40,20 @@ class ActivityController {
           'id', 'campaign_id', 'name', 'point', 'max_participants',
           'number_students', 'status', 'registration_start', 'registration_end',
           'approver_id', 'approved_at', 'created_by', 'created_at'
+        ],
+        include: [
+          {
+            model: User,
+            as: 'Creator',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'Approver',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          }
         ]
       });
       if (!activity) {
@@ -33,6 +61,112 @@ class ActivityController {
       }
       res.status(200).json({ status: "success", data: { activity } });
     } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  // Lấy danh sách hoạt động chưa được duyệt
+  static async getPendingActivities(req, res) {
+    try {
+      const activities = await Activity.findAll({
+        where: { approver_id: null },
+        attributes: [
+          'id', 'campaign_id', 'name', 'point', 'max_participants',
+          'number_students', 'status', 'registration_start', 'registration_end',
+          'approver_id', 'approved_at', 'created_by', 'created_at'
+        ],
+        include: [
+          {
+            model: User,
+            as: 'Creator',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          }
+        ]
+      });
+      res.status(200).json({ status: "success", data: { activities } });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  // Lấy danh sách hoạt động đã được duyệt
+  static async getApprovedActivities(req, res) {
+    try {
+      const activities = await Activity.findAll({
+        where: { approver_id: { [sequelize.Op.ne]: null } },
+        attributes: [
+          'id', 'campaign_id', 'name', 'point', 'max_participants',
+          'number_students', 'status', 'registration_start', 'registration_end',
+          'approver_id', 'approved_at', 'created_by', 'created_at'
+        ],
+        include: [
+          {
+            model: User,
+            as: 'Creator',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'Approver',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          }
+        ]
+      });
+      res.status(200).json({ status: "success", data: { activities } });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  // Phê duyệt hoạt động
+  static async approveActivity(req, res) {
+    const { id } = req.params;
+    const approver_id = req.user.id;
+
+    try {
+      const activity = await Activity.findByPk(id);
+      if (!activity) {
+        return res.status(404).json({ message: "Hoạt động không tồn tại." });
+      }
+
+      await activity.update({
+        approver_id,
+        approved_at: new Date()
+      });
+
+      res.status(200).json({ 
+        status: "success", 
+        message: "Phê duyệt hoạt động thành công."
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  // Từ chối hoạt động
+  static async rejectActivity(req, res) {
+    const { id } = req.params;
+
+    try {
+      const activity = await Activity.findByPk(id);
+      if (!activity) {
+        return res.status(404).json({ message: "Hoạt động không tồn tại." });
+      }
+
+      await activity.destroy();
+      res.status(200).json({ 
+        status: "success", 
+        message: "Từ chối hoạt động thành công."
+      });
+    } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
@@ -41,7 +175,7 @@ class ActivityController {
   static async createActivity(req, res) {
     const {
       campaign_id, name, point, max_participants,
-      registration_start, registration_end, approver_id, approved_at
+      registration_start, registration_end
     } = req.body;
     const created_by = req.user.id;
 
@@ -55,16 +189,19 @@ class ActivityController {
       }
 
       const newActivity = await Activity.create({
-        campaign_id, name, point, max_participants,
-        registration_start, registration_end,
+        campaign_id, 
+        name, 
+        point, 
+        max_participants,
+        registration_start, 
+        registration_end,
         created_by,
         status: "ongoing", // default nếu chưa truyền
-        approver_id: approver_id || null,
-        approved_at: approved_at || null
       });
 
       res.status(201).json({ status: "success", data: { activity: newActivity } });
     } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
@@ -74,8 +211,7 @@ class ActivityController {
     const { id } = req.params;
     const {
       campaign_id, name, point, max_participants,
-      registration_start, registration_end, status,
-      approver_id, approved_at
+      registration_start, registration_end, status
     } = req.body;
 
     try {
@@ -83,16 +219,30 @@ class ActivityController {
       if (!activity) {
         return res.status(404).json({ message: "Hoạt động không tồn tại." });
       }
-      await activity.update({
-        campaign_id, name, point, max_participants,
-        registration_start, registration_end,
-        status,
-        approver_id,
-        approved_at
-      });
+      
+      // Nếu hoạt động đã được phê duyệt, update sẽ xóa approver_id và approved_at
+      // để yêu cầu phê duyệt lại
+      const updateData = {
+        campaign_id, 
+        name, 
+        point, 
+        max_participants,
+        registration_start, 
+        registration_end,
+        status
+      };
+      
+      // Nếu hoạt động đã được phê duyệt trước đó, cần phê duyệt lại sau khi chỉnh sửa
+      if (activity.approver_id) {
+        updateData.approver_id = null;
+        updateData.approved_at = null;
+      }
+      
+      await activity.update(updateData);
 
       res.status(200).json({ status: "success", message: "Cập nhật hoạt động thành công." });
     } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
@@ -108,6 +258,7 @@ class ActivityController {
       await activity.destroy();
       res.status(200).json({ status: "success", message: "Xóa hoạt động thành công." });
     } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
@@ -128,8 +279,7 @@ class ActivityController {
       for (const a of activityList) {
         const {
           campaign_id, name, point, max_participants,
-          registration_start, registration_end,
-          approver_id, approved_at, status
+          registration_start, registration_end, status
         } = a;
 
         // Kiểm tra bắt buộc các trường chính như createActivity
@@ -146,8 +296,8 @@ class ActivityController {
         const pointNum = Number(point);
         const maxPartNum = Number(max_participants);
 
-        if (isNaN(pointNum) || pointNum < 0) {
-          failed.push({ activity: a, reason: "Điểm phải là số không âm." });
+        if (isNaN(pointNum)) {
+          failed.push({ activity: a, reason: "Điểm phải là số." });
           continue;
         }
 
@@ -157,11 +307,14 @@ class ActivityController {
         }
 
         validActivities.push({
-          campaign_id, name, point: pointNum, max_participants: maxPartNum,
-          registration_start, registration_end, created_by,
-          status: status || 'ongoing',
-          approver_id: approver_id || null,
-          approved_at: approved_at || null
+          campaign_id, 
+          name, 
+          point: pointNum, 
+          max_participants: maxPartNum,
+          registration_start, 
+          registration_end, 
+          created_by,
+          status: status || 'ongoing'
         });
       }
 
@@ -181,10 +334,10 @@ class ActivityController {
         data: { insertedActivities, failed }
       });
     } catch (err) {
+      console.error(err);
       res.status(500).json({ message: "Lỗi máy chủ khi import hoạt động." });
     }
   }
-
 }
 
 module.exports = ActivityController;

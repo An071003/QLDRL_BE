@@ -1,10 +1,17 @@
-const { Campaign } = require("../models");
+const { Campaign, Criteria } = require("../models");
 
 class CampaignController {
   static async getAllCampaigns(req, res) {
     try {
       const campaigns = await Campaign.findAll({
-        attributes: ['id', 'criteria_id', 'name', 'max_score', 'semester_no', 'academic_year', 'created_by']
+        attributes: ['id', 'criteria_id', 'name', 'max_score', 'semester_no', 'academic_year', 'created_by'],
+        include: [
+          {
+            model: Criteria,
+            as: 'Criteria',
+            attributes: ['id', 'name']
+          }
+        ]
       });
       res.status(200).json({ status: "success", data: { campaigns } });
     } catch (err) {
@@ -16,7 +23,14 @@ class CampaignController {
     const { id } = req.params;
     try {
       const campaign = await Campaign.findByPk(id, {
-        attributes: ['id', 'criteria_id', 'name', 'max_score', 'semester_no', 'academic_year', 'created_by']
+        attributes: ['id', 'criteria_id', 'name', 'max_score', 'semester_no', 'academic_year', 'created_by'],
+        include: [
+          {
+            model: Criteria,
+            as: 'Criteria',
+            attributes: ['id', 'name']
+          }
+        ]
       });
       if (!campaign) {
         return res.status(404).json({ message: "Chiến dịch không tồn tại." });

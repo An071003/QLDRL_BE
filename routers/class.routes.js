@@ -1,5 +1,6 @@
 const express = require("express");
 const ClassController = require("../controllers/class.controller");
+const { authenticateUser } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
@@ -9,6 +10,10 @@ router.get("/", ClassController.getAllClasses);
 // Get a class by ID
 router.get("/:id", ClassController.getClassById);
 router.get('/:classId/details', ClassController.getStudentsAndAdvisorByClassId);
+
+// Get students by class ID
+router.get("/:id/students", ClassController.getStudentsByClassId);
+
 // Create a new class
 router.post("/", ClassController.createClass);
 

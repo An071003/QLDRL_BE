@@ -6,6 +6,18 @@ const router = express.Router();
 // Get all activities
 router.get("/", authenticateUser, ActivityController.getAllActivities);
 
+// Get pending activities (not approved)
+router.get("/pending", authenticateUser, ActivityController.getPendingActivities);
+
+// Get approved activities
+router.get("/approved", authenticateUser, ActivityController.getApprovedActivities);
+
+// Approve an activity
+router.put("/:id/approve", authenticateUser, ActivityController.approveActivity);
+
+// Reject an activity
+router.put("/:id/reject", authenticateUser, ActivityController.rejectActivity);
+
 // Get an activity by ID
 router.get("/:id", authenticateUser, ActivityController.getActivityById);
 

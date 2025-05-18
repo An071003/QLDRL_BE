@@ -72,7 +72,7 @@ Criteria.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 User.hasMany(Criteria, { foreignKey: 'created_by', as: 'created_criteria' });
 
 // Campaign - Criteria
-Campaign.belongsTo(Criteria, { foreignKey: 'criteria_id' });
+Campaign.belongsTo(Criteria, { foreignKey: 'criteria_id', as: 'Criteria' });
 Criteria.hasMany(Campaign, { foreignKey: 'criteria_id' });
 
 // Campaign - User (created_by)
@@ -84,8 +84,11 @@ Activity.belongsTo(Campaign, { foreignKey: 'campaign_id' });
 Campaign.hasMany(Activity, { foreignKey: 'campaign_id' });
 
 // Activity - User (created_by, approver_id)
-Activity.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
-Activity.belongsTo(User, { foreignKey: 'approver_id', as: 'approver' });
+Activity.belongsTo(User, { foreignKey: 'created_by', as: 'Creator' });
+User.hasMany(Activity, { foreignKey: 'created_by', as: 'CreatedActivities' });
+
+Activity.belongsTo(User, { foreignKey: 'approver_id', as: 'Approver' });
+User.hasMany(Activity, { foreignKey: 'approver_id', as: 'ApprovedActivities' });
 
 // StudentActivity - Student & Activity
 StudentActivity.belongsTo(Student, { foreignKey: 'student_id' });

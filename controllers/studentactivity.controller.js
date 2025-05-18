@@ -281,7 +281,25 @@ class StudentActivityController {
     const { studentId } = req.params;
 
     try {
-      const activities = await StudentActivity.getActivitiesByStudent(studentId);
+      const studentActivities = await StudentActivity.findAll({
+        where: { student_id: studentId },
+        include: [
+          {
+            model: Activity,
+            where: { approver_id: { [Op.not]: null } }, // Only approved activities
+            include: [
+              {
+                model: Campaign,
+                attributes: ['name', 'semester_no', 'academic_year']
+              }
+            ]
+          }
+        ]
+      });
+
+      // Transform the data to match expected format
+      const activities = studentActivities.map(sa => sa.Activity);
+      
       res.status(200).json({ status: "success", data: activities });
     } catch (error) {
       console.error("Lỗi khi lấy hoạt động theo sinh viên:", error);
@@ -328,6 +346,7 @@ class StudentActivityController {
             { status: 'ongoing' },
             { registration_start: { [Op.lte]: today } },
             { registration_end: { [Op.gte]: today } },
+            { approver_id: { [Op.not]: null } },
             {
               id: {
                 [Op.notIn]: registeredIds.length > 0 ? registeredIds : [0]
@@ -372,6 +391,7 @@ class StudentActivityController {
           {
             model: Activity,
             attributes: ['id', 'name', 'point', 'status'],
+            where: { approver_id: { [Op.not]: null } }, // Only show approved activities
             include: [
               {
                 model: Campaign,
@@ -418,6 +438,7 @@ class StudentActivityController {
           [Op.and]: [
             { campaign_id: { [Op.in]: campaignIds } },
             { status: 'ongoing' },
+            { approver_id: { [Op.not]: null } },
             { registration_start: { [Op.lte]: today } },
             { registration_end: { [Op.gte]: today } }
           ]

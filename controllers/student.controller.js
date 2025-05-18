@@ -344,9 +344,6 @@ class StudentController {
         ],
         attributes: ['id'],
       });
-      if (!advisor) {
-        return res.status(404).json({ message: 'Không tìm thấy cố vấn.' });
-      }
 
       const students = await Student.findAll({
         include: [

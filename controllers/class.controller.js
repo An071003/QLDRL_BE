@@ -157,6 +157,35 @@ class ClassController {
       res.status(500).json({ message: 'Lỗi máy chủ khi lấy danh sách sinh viên và cố vấn.' });
     }
   }
+
+  static async getStudentsByClassId(req, res) {
+    try {
+      const classId = req.params.id;
+      
+      const students = await Student.findAll({
+        where: { class_id: classId },
+        attributes: ['student_id', 'student_name', 'phone', 'birthdate', 'status', 'classification', 'sumscore'],
+      });
+
+      if (!students) {
+        return res.status(404).json({ 
+          status: 'error', 
+          message: 'Không tìm thấy sinh viên trong lớp này.' 
+        });
+      }
+
+      res.status(200).json({
+        status: 'success',
+        data: { students }
+      });
+    } catch (err) {
+      console.error('Error fetching students by class ID:', err);
+      res.status(500).json({ 
+        status: 'error',
+        message: 'Lỗi máy chủ khi lấy danh sách sinh viên.' 
+      });
+    }
+  }
 }
 
 module.exports = ClassController;
