@@ -7,6 +7,7 @@ const router = express.Router();
 router.get("/", authenticateUser, FacultyController.getAllFaculties);
 
 // Get a faculty by ID
+router.get('/:facultyId/classes', FacultyController.getClassesByFacultyId);
 router.get("/:id", FacultyController.getFacultyById);
 
 // Create a new faculty

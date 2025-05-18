@@ -4,7 +4,6 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const emailMiddleware = require("../middlewares/emailMiddleware");
 const { Faculty, Class, Role, Advisor } = require('../models');
-const { where } = require('sequelize');
 
 class StudentController {
   static generateRandomPassword = () => {
@@ -161,7 +160,7 @@ class StudentController {
   static async updateStudent(req, res) {
     try {
       const studentId = req.params.id;
-      const { student_name, faculty_id, class_id, phone, className, status } = req.body;
+      const { student_name, faculty_id, class_id, phone, className, birthdate, status } = req.body;
 
       const existingStudent = await Student.findByPk(studentId);
       if (!existingStudent) {
@@ -169,7 +168,7 @@ class StudentController {
       }
 
       await Student.update({
-        student_name, faculty_id, class_id, phone, class: className, status
+        student_name, faculty_id, class_id, phone, class: className, status, birthdate
       }, {
         where: { student_id: studentId }
       });

@@ -11,6 +11,7 @@ router.get("/:id", AdvisorController.getAdvisorById);
 
 // Create a new advisor
 router.post("/", AdvisorController.createAdvisor);
+router.post("/import", AdvisorController.importAdvisorsFromExcel);
 
 // Update an advisor
 router.put("/:id", AdvisorController.updateAdvisor);

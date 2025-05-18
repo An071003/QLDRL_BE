@@ -1,3 +1,4 @@
+const { Class } = require('../models');
 const Faculty = require('../models/faculty.model');
 
 class FacultyController {
@@ -39,7 +40,7 @@ class FacultyController {
   static async importFaculties(req, res) {
     try {
       const faculties = req.body;
-      
+
       if (!Array.isArray(faculties) || faculties.length === 0) {
         return res.status(400).json({ message: 'Dữ liệu không hợp lệ. Yêu cầu một mảng các khoa.' });
       }
@@ -53,7 +54,7 @@ class FacultyController {
       // Process each faculty one by one to handle duplicates properly
       for (const faculty of faculties) {
         const { faculty_abbr, name } = faculty;
-        
+
         // Validate required fields
         if (!faculty_abbr || !name) {
           results.failed++;
@@ -77,10 +78,10 @@ class FacultyController {
         }
       }
 
-      res.status(201).json({ 
-        status: 'success', 
+      res.status(201).json({
+        status: 'success',
         message: `Import hoàn tất: ${results.success} thành công, ${results.failed} thất bại.`,
-        results 
+        results
       });
     } catch (err) {
       console.error('Import faculties error:', err);
@@ -114,6 +115,24 @@ class FacultyController {
       res.status(200).json({ status: 'success', message: 'Đã xóa khoa thành công.' });
     } catch (err) {
       res.status(500).json({ message: 'Lỗi máy chủ.' });
+    }
+  }
+
+  static async getClassesByFacultyId(req, res) {
+    try {
+      const facultyId = req.params.facultyId;
+
+      const faculty = await Faculty.findByPk(facultyId);
+      if (!faculty) {
+        return res.status(404).json({ message: 'Không tìm thấy khoa.' });
+      }
+
+      const classes = await Class.findAll({ where: { faculty_id: facultyId } });
+
+      res.status(200).json({ status: 'success', data: { classes } });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Lỗi máy chủ khi lấy danh sách lớp.' });
     }
   }
 }

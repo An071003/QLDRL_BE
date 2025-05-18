@@ -8,7 +8,7 @@ router.get("/", ClassController.getAllClasses);
 
 // Get a class by ID
 router.get("/:id", ClassController.getClassById);
-
+router.get('/:classId/details', ClassController.getStudentsAndAdvisorByClassId);
 // Create a new class
 router.post("/", ClassController.createClass);
 
