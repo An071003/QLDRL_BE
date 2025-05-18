@@ -4,21 +4,21 @@ const { authenticateUser, authorizeRoles, authorizePermissions } = require("../m
 const router = express.Router();
 
 // Get all campaigns
-router.get("/", authenticateUser, authorizeRoles("admin"), CampaignController.getAllCampaigns);
+router.get("/", authenticateUser, CampaignController.getAllCampaigns);
 
 // Get a campaign by ID
-router.get("/:id", authenticateUser, authorizeRoles("admin"), CampaignController.getCampaignById);
+router.get("/:id", authenticateUser, CampaignController.getCampaignById);
 
 // Create a new campaign
-router.post("/", authenticateUser, authorizeRoles("admin"), CampaignController.createCampaign);
+router.post("/", authenticateUser, CampaignController.createCampaign);
 
 // Update a campaign
-router.put("/:id", authenticateUser, authorizeRoles("admin"), CampaignController.updateCampaign);
+router.put("/:id", authenticateUser, CampaignController.updateCampaign);
 
 // Delete a campaign
-router.delete("/:id", authenticateUser, authorizeRoles("admin"), CampaignController.deleteCampaign);
+router.delete("/:id", authenticateUser, CampaignController.deleteCampaign);
 
 // Import campaigns from an Excel file
-router.post('/import', authenticateUser, authorizeRoles('admin'), CampaignController.importCampaigns);
+router.post('/import', authenticateUser, CampaignController.importCampaigns);
 
 module.exports = router;

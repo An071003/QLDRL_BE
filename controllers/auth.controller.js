@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { User, Role } = require("../models");
+const { User, Role, Student } = require("../models");
 const emailMiddleware = require("../middlewares/emailMiddleware");
 const EmailVerificationCode = require("../models/EmailVerificationCode.model");
 
@@ -91,7 +91,16 @@ class AuthController {
     static async getMe(req, res) {
         try {
             const user = await User.findByPk(req.user.id, {
-                include: { model: Role, attributes: ['name'] }
+                include: [
+                    {
+                        model: Role,
+                        attributes: ['name']
+                    },
+                    {
+                        model: Student,
+                        attributes: ['student_id']
+                    }
+                ]
             });
 
             if (!user) {

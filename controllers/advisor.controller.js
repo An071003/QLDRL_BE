@@ -1,21 +1,42 @@
-const { Advisor } = require("../models");
+const { Advisor, Faculty, Class } = require("../models");
 
 class AdvisorController {
-  // Get all advisors
   static async getAllAdvisors(req, res) {
     try {
-      const advisors = await Advisor.findAll();
+      const advisors = await Advisor.findAll({
+        include: [
+          {
+            model: Faculty,
+            attributes: ['id', 'name', 'faculty_abbr'],
+          },
+          {
+            model: Class,
+            attributes: ['id', 'name'],
+          },
+        ],
+      });
       res.status(200).json({ advisors });
     } catch (err) {
       res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
-  // Get an advisor by ID
+  // Get an advisor by ID with Faculty and Class
   static async getAdvisorById(req, res) {
     try {
       const { id } = req.params;
-      const advisor = await Advisor.findByPk(id);
+      const advisor = await Advisor.findByPk(id, {
+        include: [
+          {
+            model: Faculty,
+            attributes: ['id', 'name', 'faculty_abbr'],
+          },
+          {
+            model: Class,
+            attributes: ['id', 'name'],
+          },
+        ],
+      });
       if (!advisor) {
         return res.status(404).json({ message: "Advisor not found" });
       }

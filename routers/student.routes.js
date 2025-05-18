@@ -5,6 +5,7 @@ const { authenticateUser, authorizeRoles } = require("../middlewares/authMiddlew
 const router = express.Router();
 
 router.get("/", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer"), StudentController.getAllStudents);
+router.get('/advisor', authenticateUser, StudentController.getStudentsByAdvisorId);
 router.get("/:id", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer", "student"), StudentController.getStudentById);
 router.post("/", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.createStudent);
 router.post("/import", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.createStudentsFromExcel)

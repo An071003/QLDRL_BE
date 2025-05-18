@@ -4,21 +4,21 @@ const { authenticateUser, authorizeRoles, authorizePermissions } = require("../m
 const router = express.Router();
 
 // Get all criteria
-router.get("/", authenticateUser, authorizeRoles("admin"), CriteriaController.getAllCriteria);
+router.get("/", authenticateUser, CriteriaController.getAllCriteria);
 
 // Get a criterion by ID
-router.get("/:id", authenticateUser, authorizeRoles("admin"), CriteriaController.getCriteriaById);
+router.get("/:id", authenticateUser, CriteriaController.getCriteriaById);
 
 // Create a new criterion
-router.post("/", authenticateUser, authorizeRoles("admin"), CriteriaController.createCriteria);
+router.post("/", authenticateUser, CriteriaController.createCriteria);
 
 // Update a criterion
-router.put("/:id", authenticateUser, authorizeRoles("admin"), CriteriaController.updateCriteria);
+router.put("/:id", authenticateUser, CriteriaController.updateCriteria);
 
 // Delete a criterion
-router.delete("/:id", authenticateUser, authorizeRoles("admin"), CriteriaController.deleteCriteria);
+router.delete("/:id", authenticateUser, CriteriaController.deleteCriteria);
 
 // Import criteria from Excel file
-router.post('/import', authenticateUser, authorizeRoles('admin'), CriteriaController.importCriteria);
+router.post('/import', authenticateUser, CriteriaController.importCriteria);
 
 module.exports = router;

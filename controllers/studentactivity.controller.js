@@ -293,52 +293,71 @@ class StudentActivityController {
     const { studentId } = req.params;
 
     try {
-      const [semesterResult] = await db.promise().query(`
-      SELECT id FROM semester ORDER BY start_year DESC, name DESC LIMIT 1
-    `);
-      if (!semesterResult || semesterResult.length === 0) {
-        return res.status(400).json({ message: "Không tìm thấy học kỳ." });
+      const latestCampaign = await Campaign.findOne({
+        order: [
+          ['academic_year', 'DESC'],
+          ['semester_no', 'DESC']
+        ]
+      });
+
+      if (!latestCampaign) {
+        return res.status(404).json({ message: 'Không tìm thấy chiến dịch.' });
       }
 
-      const semesterId = semesterResult[0].id;
+      const { academic_year, semester_no } = latestCampaign;
 
-      const [results] = await db.promise().query(
-        `
-        SELECT a.id, a.name, a.point, a.status, a.is_negative, a.negativescore, a.number_students,
-               a.campaign_id, c.name AS campaign_name,
-               s.id AS semester, s.name AS semester_name, s.start_year, s.end_year
-        FROM activities a
-        JOIN campaigns c ON a.campaign_id = c.id
-        JOIN semester s ON c.semester = s.id
-        WHERE a.status = 'ongoing'
-          AND c.semester = ?
-          AND NOT EXISTS (
-            SELECT 1 FROM student_activities sa
-            WHERE sa.student_id = ?
-              AND sa.activity_id = a.id
-              AND sa.semester = ?
-          )
-        `,
-        [semesterId, studentId, semesterId]
-      );
+      const campaigns = await Campaign.findAll({
+        where: { academic_year, semester_no },
+        attributes: ['id']
+      });
 
+      const campaignIds = campaigns.map(c => c.id);
+
+      const registeredActivities = await StudentActivity.findAll({
+        where: { student_id: studentId },
+        attributes: ['activity_id']
+      });
+
+      const registeredIds = registeredActivities.map(sa => sa.activity_id);
+      const today = new Date();
+
+      const activities = await Activity.findAll({
+        where: {
+          [Op.and]: [
+            { campaign_id: { [Op.in]: campaignIds } },
+            { status: 'ongoing' },
+            { registration_start: { [Op.lte]: today } },
+            { registration_end: { [Op.gte]: today } },
+            {
+              id: {
+                [Op.notIn]: registeredIds.length > 0 ? registeredIds : [0]
+              }
+            }
+          ]
+        },
+        include: [
+          {
+            model: Campaign,
+            attributes: ['name', 'semester_no', 'academic_year']
+          }
+        ]
+      });
 
       res.status(200).json({
-        status: "success",
-        data: results,
+        status: 'success',
+        data: activities
       });
     } catch (err) {
-      console.error("Lỗi khi lấy hoạt động chưa đăng ký:", err);
-      res.status(500).json({ message: "Lỗi máy chủ." });
+      console.error('Lỗi khi lấy hoạt động chưa đăng ký:', err);
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
 
-
   static async getStudentActivityByStudentId(req, res) {
     try {
-      const { activityId } = req.params;
-      const studentActivity = await StudentActivity.findByPk(activityId, {
-        where: { activity_id: activityId },
+      const { studentID } = req.params;
+      const studentActivity = await StudentActivity.findAll({
+        where: { student_id: studentID },
         include: [
           {
             model: Student,
@@ -356,22 +375,76 @@ class StudentActivityController {
             include: [
               {
                 model: Campaign,
-                attributes: ['name'],
+                attributes: ['name', 'semester_no', 'academic_year'],
               },
             ],
           },
         ],
       });
-      if (!studentActivity) {
-        return res.status(404).json({ message: "Student activity not found" });
-      }
       res.status(200).json({ studentActivity });
     } catch (err) {
       res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 
-  // Create a new student activity
+  static async getRegisteredActivitiesForStudent(req, res) {
+    const { studentId } = req.params;
+
+    try {
+      const latestCampaign = await Campaign.findOne({
+        order: [
+          ['academic_year', 'DESC'],
+          ['semester_no', 'DESC']
+        ]
+      });
+
+      if (!latestCampaign) {
+        return res.status(404).json({ message: 'Không tìm thấy chiến dịch.' });
+      }
+
+      const { academic_year, semester_no } = latestCampaign;
+      const campaigns = await Campaign.findAll({
+        where: {
+          academic_year,
+          semester_no
+        },
+        attributes: ['id']
+      });
+
+      const campaignIds = campaigns.map(c => c.id);
+      const today = new Date();
+      const activities = await Activity.findAll({
+        where: {
+          [Op.and]: [
+            { campaign_id: { [Op.in]: campaignIds } },
+            { status: 'ongoing' },
+            { registration_start: { [Op.lte]: today } },
+            { registration_end: { [Op.gte]: today } }
+          ]
+        },
+        include: [
+          {
+            model: StudentActivity,
+            where: { student_id: studentId },
+            required: true
+          },
+          {
+            model: Campaign,
+            attributes: ['name', 'semester_no', 'academic_year']
+          }
+        ]
+      });
+
+      res.status(200).json({
+        status: 'success',
+        data: activities
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy hoạt động đã đăng ký:', error);
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
+    }
+  }
+
   static async createStudentActivity(req, res) {
     try {
       const { student_id, activity_id, score } = req.body;
@@ -386,7 +459,6 @@ class StudentActivityController {
     }
   }
 
-  // Update a student activity
   static async updateStudentActivity(req, res) {
     try {
       const { id } = req.params;
@@ -402,7 +474,6 @@ class StudentActivityController {
     }
   }
 
-  // Delete a student activity
   static async deleteStudentActivity(req, res) {
     try {
       const { id } = req.params;

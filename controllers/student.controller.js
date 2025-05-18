@@ -3,7 +3,7 @@ const User = require('../models/user.model');
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const emailMiddleware = require("../middlewares/emailMiddleware");
-const { Faculty, Class, Role } = require('../models');
+const { Faculty, Class, Role, Advisor } = require('../models');
 const { where } = require('sequelize');
 
 class StudentController {
@@ -329,6 +329,52 @@ class StudentController {
       return res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
+
+
+  static async getStudentsByAdvisorId(req, res) {
+    try {
+      const user_id = req.user.id;
+      const advisor = await Advisor.findOne({
+        where: {},
+        include: [
+          {
+            model: User,
+            where: { id: user_id },
+            attributes: [],
+          },
+        ],
+        attributes: ['id'],
+      });
+      if (!advisor) {
+        return res.status(404).json({ message: 'Không tìm thấy cố vấn.' });
+      }
+
+      const students = await Student.findAll({
+        include: [
+          {
+            model: Class,
+            where: { advisor_id: advisor.id },
+            attributes: ['name'],
+          },
+          {
+            model: Faculty,
+            attributes: ['faculty_abbr'],
+          },
+        ],
+      });
+
+      return res.status(200).json({
+        status: 'success',
+        data: { students },
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        message: 'Lỗi máy chủ.',
+      });
+    }
+  }
+
 }
 
 module.exports = StudentController;

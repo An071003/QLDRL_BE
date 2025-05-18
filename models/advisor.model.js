@@ -6,6 +6,7 @@ const Advisor = sequelize.define('Advisor', {
   name: { type: DataTypes.STRING(50), allowNull: true },
   user_id: { type: DataTypes.INTEGER, allowNull: false, unique: true },
   faculty_id: { type: DataTypes.INTEGER, allowNull: true },
+  phone: { type: DataTypes.STRING(10), allowNull: true,},
 }, {
   tableName: 'advisors',
   timestamps: false,
