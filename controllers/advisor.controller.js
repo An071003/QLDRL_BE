@@ -21,7 +21,6 @@ class AdvisorController {
     }
   }
 
-  // Get an advisor by ID with Faculty and Class
   static async getAdvisorById(req, res) {
     try {
       const { id } = req.params;
@@ -46,7 +45,6 @@ class AdvisorController {
     }
   }
 
-  // Create a new advisor
   static async createAdvisor(req, res) {
     try {
       const { name, faculty_id } = req.body;
@@ -57,7 +55,6 @@ class AdvisorController {
     }
   }
 
-  // Update an advisor
   static async updateAdvisor(req, res) {
     try {
       const { id } = req.params;
@@ -73,7 +70,6 @@ class AdvisorController {
     }
   }
 
-  // Delete an advisor
   static async deleteAdvisor(req, res) {
     try {
       const { id } = req.params;
