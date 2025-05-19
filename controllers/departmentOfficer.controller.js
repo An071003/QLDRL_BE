@@ -5,7 +5,9 @@ const { DepartmentOfficer, User, Role } = require("../models");
 const emailMiddleware = require("../middlewares/emailMiddleware");
 
 class DepartmentOfficerController {
-  static generateRandomPassword = () => crypto.randomBytes(8).toString("hex");
+  static generateRandomPassword = () => {
+      return crypto.randomBytes(8).toString("hex");
+    };
 
   static async getAllDepartmentOfficers(req, res) {
     try {
@@ -63,7 +65,7 @@ class DepartmentOfficerController {
         return res.status(400).json({ message: "Không tìm thấy role 'departmentofficer'." });
       }
 
-      const plainPassword = this.generateRandomPassword();
+      const plainPassword = DepartmentOfficerController.generateRandomPassword();
       const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
       const newUser = await User.create({
