@@ -174,12 +174,12 @@ class AdvisorController {
 
       for (const a of advisors) {
         const {
-          user,
+          username,
           name,
           faculty_id,
+          email,
           phone
         } = a;
-        const {username, email} = user;
 
         if (!username || !name || !faculty_id || !email) {
           failed.push({ username, name, reason: "Thiếu thông tin bắt buộc" });
