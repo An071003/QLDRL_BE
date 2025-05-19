@@ -1,6 +1,6 @@
 const express = require("express");
 const ClassController = require("../controllers/class.controller");
-const { authenticateUser } = require('../middlewares/authMiddleware');
+const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
@@ -22,5 +22,8 @@ router.put("/:id", ClassController.updateClass);
 
 // Delete a class
 router.delete("/:id", ClassController.deleteClass);
+
+// Set or unset a class leader
+router.post("/:classId/set-class-leader", authenticateUser, authorizeRoles('advisor', 'departmentofficer', 'admin'), ClassController.setClassLeader);
 
 module.exports = router;

@@ -89,6 +89,7 @@ class StudentActivityController {
     const { studentIds } = req.body;
     const { activityId } = req.params;
     const register_id = req.user.id;
+    const userRole = req.user.Role?.name;
 
     try {
       const activity = await Activity.findOne({
@@ -105,6 +106,42 @@ class StudentActivityController {
         return res.status(403).json({ 
           message: 'Không thể đăng ký sinh viên cho hoạt động chưa được phê duyệt.' 
         });
+      }
+
+      // Kiểm tra nếu người dùng là lớp trưởng, chỉ cho phép đăng ký sinh viên trong lớp của họ
+      if (userRole === 'classleader') {
+        try {
+          // Lấy thông tin sinh viên của lớp trưởng
+          const classLeaderStudent = await Student.findOne({
+            where: { user_id: req.user.id },
+            attributes: ['student_id', 'class_id'],
+          });
+
+          if (!classLeaderStudent || !classLeaderStudent.class_id) {
+            return res.status(403).json({ message: 'Không tìm thấy thông tin lớp của lớp trưởng.' });
+          }
+
+          // Lấy danh sách sinh viên trong lớp
+          const classStudents = await Student.findAll({
+            where: { class_id: classLeaderStudent.class_id },
+            attributes: ['student_id'],
+          });
+
+          const classStudentIds = classStudents.map(student => student.student_id);
+          
+          // Kiểm tra xem tất cả sinh viên được đăng ký có thuộc lớp của lớp trưởng không
+          const invalidStudents = studentIds.filter(id => !classStudentIds.includes(id));
+          
+          if (invalidStudents.length > 0) {
+            return res.status(403).json({ 
+              message: 'Lớp trưởng chỉ có thể đăng ký hoạt động cho sinh viên trong lớp của mình.',
+              invalidStudents
+            });
+          }
+        } catch (error) {
+          console.error('Lỗi khi kiểm tra quyền lớp trưởng:', error);
+          return res.status(500).json({ message: 'Lỗi khi kiểm tra quyền.' });
+        }
       }
 
       const studentList = studentIds.map(student_id => ({
@@ -126,6 +163,7 @@ class StudentActivityController {
   static async editStudentParticipation(req, res) {
     const { activityId } = req.params;
     const { participated, studentId } = req.body;
+    const userRole = req.user.Role?.name;
 
     if (!activityId || !studentId || typeof participated !== 'boolean') {
       return res.status(400).json({ message: 'Dữ liệu đầu vào không hợp lệ.' });
@@ -145,6 +183,38 @@ class StudentActivityController {
         return res.status(403).json({ 
           message: 'Không thể thay đổi trạng thái tham gia cho hoạt động chưa được phê duyệt.' 
         });
+      }
+
+      // Kiểm tra nếu người dùng là lớp trưởng, chỉ cho phép cập nhật trạng thái cho sinh viên trong lớp
+      if (userRole === 'classleader') {
+        try {
+          // Lấy thông tin sinh viên của lớp trưởng
+          const classLeaderStudent = await Student.findOne({
+            where: { user_id: req.user.id },
+            attributes: ['student_id', 'class_id'],
+          });
+
+          if (!classLeaderStudent || !classLeaderStudent.class_id) {
+            return res.status(403).json({ message: 'Không tìm thấy thông tin lớp của lớp trưởng.' });
+          }
+
+          // Kiểm tra xem sinh viên cần cập nhật có thuộc lớp của lớp trưởng không
+          const student = await Student.findOne({
+            where: { 
+              student_id: studentId,
+              class_id: classLeaderStudent.class_id 
+            }
+          });
+
+          if (!student) {
+            return res.status(403).json({ 
+              message: 'Lớp trưởng chỉ có thể cập nhật trạng thái cho sinh viên trong lớp của mình.'
+            });
+          }
+        } catch (error) {
+          console.error('Lỗi khi kiểm tra quyền lớp trưởng:', error);
+          return res.status(500).json({ message: 'Lỗi khi kiểm tra quyền.' });
+        }
       }
 
       const [updatedCount] = await StudentActivity.update(
@@ -173,22 +243,80 @@ class StudentActivityController {
 
   static async removeStudent(req, res) {
     const { activityId, studentIds } = req.params;
+    const userRole = req.user.Role?.name;
+    
     try {
-      const deletedCount = await StudentActivity.destroy({
-        where: {
-          activity_id: activityId,
-          student_id: studentIds,
-        },
-      });
+      // Kiểm tra nếu người dùng là lớp trưởng, chỉ cho phép xóa sinh viên trong lớp
+      if (userRole === 'classleader') {
+        try {
+          // Lấy thông tin sinh viên của lớp trưởng
+          const classLeaderStudent = await Student.findOne({
+            where: { user_id: req.user.id },
+            attributes: ['student_id', 'class_id'],
+          });
 
-      if (deletedCount === 0) {
-        return res.status(404).json({ message: 'Không tìm thấy sinh viên để xóa khỏi hoạt động.' });
+          if (!classLeaderStudent || !classLeaderStudent.class_id) {
+            return res.status(403).json({ message: 'Không tìm thấy thông tin lớp của lớp trưởng.' });
+          }
+
+          // Làm việc với mảng studentIds
+          const studentIdsArray = studentIds.split(',');
+          
+          // Kiểm tra xem tất cả sinh viên cần xóa có thuộc lớp của lớp trưởng không
+          const studentsInClass = await Student.findAll({
+            where: { 
+              student_id: studentIdsArray,
+              class_id: classLeaderStudent.class_id 
+            },
+            attributes: ['student_id']
+          });
+          
+          const validStudentIds = studentsInClass.map(student => student.student_id);
+          
+          if (validStudentIds.length !== studentIdsArray.length) {
+            return res.status(403).json({ 
+              message: 'Lớp trưởng chỉ có thể xóa sinh viên trong lớp của mình khỏi hoạt động.'
+            });
+          }
+          
+          // Tiếp tục với các studentIds hợp lệ
+          const deletedCount = await StudentActivity.destroy({
+            where: {
+              activity_id: activityId,
+              student_id: validStudentIds,
+            },
+          });
+          
+          if (deletedCount === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy sinh viên để xóa khỏi hoạt động.' });
+          }
+          
+          return res.status(200).json({
+            status: 'success',
+            message: `Đã xóa ${deletedCount} sinh viên khỏi hoạt động.`,
+          });
+        } catch (error) {
+          console.error('Lỗi khi kiểm tra quyền lớp trưởng:', error);
+          return res.status(500).json({ message: 'Lỗi khi kiểm tra quyền.' });
+        }
+      } else {
+        // Nếu không phải lớp trưởng, thực hiện xóa sinh viên bình thường
+        const deletedCount = await StudentActivity.destroy({
+          where: {
+            activity_id: activityId,
+            student_id: studentIds,
+          },
+        });
+
+        if (deletedCount === 0) {
+          return res.status(404).json({ message: 'Không tìm thấy sinh viên để xóa khỏi hoạt động.' });
+        }
+
+        return res.status(200).json({
+          status: 'success',
+          message: `Đã xóa ${deletedCount} sinh viên khỏi hoạt động.`,
+        });
       }
-
-      return res.status(200).json({
-        status: 'success',
-        message: `Đã xóa ${deletedCount} sinh viên khỏi hoạt động.`,
-      });
     } catch (err) {
       console.error('❌ Lỗi khi xóa sinh viên khỏi hoạt động:', err);
       return res.status(500).json({ message: 'Đã xảy ra lỗi máy chủ.' });
@@ -198,6 +326,7 @@ class StudentActivityController {
   static async importStudents(req, res) {
     const { activityId } = req.params;
     const { students } = req.body;
+    const userRole = req.user.Role?.name;
 
     if (!Array.isArray(students) || students.length === 0) {
       return res.status(400).json({ message: 'Danh sách sinh viên không hợp lệ.' });
@@ -220,6 +349,43 @@ class StudentActivityController {
       }
 
       const mssvList = students.map(s => s.mssv);
+      
+      // Kiểm tra nếu người dùng là lớp trưởng, chỉ cho phép đăng ký cho sinh viên trong lớp
+      if (userRole === 'classleader') {
+        try {
+          // Lấy thông tin sinh viên của lớp trưởng
+          const classLeaderStudent = await Student.findOne({
+            where: { user_id: req.user.id },
+            attributes: ['student_id', 'class_id'],
+          });
+
+          if (!classLeaderStudent || !classLeaderStudent.class_id) {
+            return res.status(403).json({ message: 'Không tìm thấy thông tin lớp của lớp trưởng.' });
+          }
+
+          // Kiểm tra xem tất cả sinh viên cần import có thuộc lớp của lớp trưởng không
+          const studentsInClass = await Student.findAll({
+            where: { 
+              student_id: mssvList,
+              class_id: classLeaderStudent.class_id 
+            },
+            attributes: ['student_id']
+          });
+          
+          const validStudentIds = studentsInClass.map(student => student.student_id);
+          
+          if (validStudentIds.length !== mssvList.length) {
+            const invalidStudents = mssvList.filter(id => !validStudentIds.includes(id));
+            return res.status(403).json({ 
+              message: 'Lớp trưởng chỉ có thể đăng ký cho sinh viên trong lớp của mình.',
+              invalidStudents
+            });
+          }
+        } catch (error) {
+          console.error('Lỗi khi kiểm tra quyền lớp trưởng:', error);
+          return res.status(500).json({ message: 'Lỗi khi kiểm tra quyền.' });
+        }
+      }
 
       const existingStudents = await Student.findAll({
         where: { student_id: mssvList },
@@ -365,15 +531,14 @@ class StudentActivityController {
       });
 
       const registeredIds = registeredActivities.map(sa => sa.activity_id);
-      const today = new Date();
-
+      
+      // Lấy tất cả các hoạt động trong chiến dịch hiện tại mà sinh viên chưa đăng ký
+      // Bỏ điều kiện lọc theo ngày để xem tất cả hoạt động
       const activities = await Activity.findAll({
         where: {
           [Op.and]: [
             { campaign_id: { [Op.in]: campaignIds } },
             { status: 'ongoing' },
-            { registration_start: { [Op.lte]: today } },
-            { registration_end: { [Op.gte]: today } },
             { approver_id: { [Op.not]: null } },
             {
               id: {
@@ -390,8 +555,17 @@ class StudentActivityController {
         ]
       });
 
+      // Log số lượng hoạt động tìm được để kiểm tra
+      console.log(`Found ${activities.length} available activities for student ${studentId}`);
+      
+      // Trả về thông tin chi tiết về các điều kiện lọc để dễ gỡ lỗi
       res.status(200).json({
         status: 'success',
+        debug: {
+          campaignIds,
+          registeredIds,
+          totalActivities: activities.length
+        },
         data: activities
       });
     } catch (err) {
@@ -460,15 +634,15 @@ class StudentActivityController {
       });
 
       const campaignIds = campaigns.map(c => c.id);
-      const today = new Date();
+      
+      // Lấy các hoạt động đã đăng ký của sinh viên trong chiến dịch hiện tại
+      // Bỏ điều kiện lọc theo ngày để xem tất cả hoạt động đã đăng ký
       const activities = await Activity.findAll({
         where: {
           [Op.and]: [
             { campaign_id: { [Op.in]: campaignIds } },
             { status: 'ongoing' },
-            { approver_id: { [Op.not]: null } },
-            { registration_start: { [Op.lte]: today } },
-            { registration_end: { [Op.gte]: today } }
+            { approver_id: { [Op.not]: null } }
           ]
         },
         include: [
@@ -484,8 +658,15 @@ class StudentActivityController {
         ]
       });
 
+      // Log số lượng hoạt động tìm được để kiểm tra
+      console.log(`Found ${activities.length} registered activities for student ${studentId}`);
+
       res.status(200).json({
         status: 'success',
+        debug: {
+          campaignIds,
+          totalActivities: activities.length
+        },
         data: activities
       });
     } catch (error) {

@@ -4,13 +4,13 @@ const { authenticateUser, authorizeRoles } = require("../middlewares/authMiddlew
 
 const router = express.Router();
 
-router.get("/", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer"), StudentController.getAllStudents);
+router.get("/", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer", "classleader"), StudentController.getAllStudents);
 router.get('/advisor', authenticateUser, StudentController.getStudentsByAdvisorId);
-router.get("/:id", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer", "student"), StudentController.getStudentById);
-router.post("/", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.createStudent);
-router.post("/import", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.createStudentsFromExcel)
+router.get("/:id", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer", "student", "classleader"), StudentController.getStudentById);
+router.post("/", authenticateUser, authorizeRoles("admin", "departmentofficer", "classleader"), StudentController.createStudent);
+router.post("/import", authenticateUser, authorizeRoles("admin", "departmentofficer", "classleader"), StudentController.createStudentsFromExcel)
 router.put("/:id", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.updateStudent);
-router.delete("/:id", authenticateUser, authorizeRoles("admin", "departmentofficer"), StudentController.deleteStudent);
-router.get("/:id/activities", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer"), StudentController.getStudentActivitiesByLatestSemester);
+router.delete("/:id", authenticateUser, authorizeRoles("admin", "departmentofficer", "classleader"), StudentController.deleteStudent);
+router.get("/:id/activities", authenticateUser, authorizeRoles("admin", "advisor", "departmentofficer", "classleader"), StudentController.getStudentActivitiesByLatestSemester);
 
 module.exports = router;
