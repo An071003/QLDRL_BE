@@ -65,7 +65,6 @@ class AdvisorController {
   static async createAdvisor(req, res) {
     try {
       const { user, name, faculty_id, phone } = req.body;
-      console.log(req.body);
       const {username, email} = user;
       if (!username || !name || !faculty_id || !email) {
         return res.status(400).json({ message: "Thiếu thông tin bắt buộc." });
