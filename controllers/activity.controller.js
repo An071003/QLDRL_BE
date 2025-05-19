@@ -66,7 +66,6 @@ class ActivityController {
     }
   }
 
-  // Lấy danh sách hoạt động chưa được duyệt
   static async getPendingActivities(req, res) {
     try {
       const activities = await Activity.findAll({
@@ -92,7 +91,6 @@ class ActivityController {
     }
   }
 
-  // Lấy danh sách hoạt động đã được duyệt
   static async getApprovedActivities(req, res) {
     try {
       const activities = await Activity.findAll({

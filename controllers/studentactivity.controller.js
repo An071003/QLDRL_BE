@@ -286,7 +286,7 @@ class StudentActivityController {
         include: [
           {
             model: Activity,
-            where: { approver_id: { [Op.not]: null } }, // Only approved activities
+            where: { approver_id: { [Op.not]: null } },
             include: [
               {
                 model: Campaign,
@@ -297,7 +297,6 @@ class StudentActivityController {
         ]
       });
 
-      // Transform the data to match expected format
       const activities = studentActivities.map(sa => sa.Activity);
       
       res.status(200).json({ status: "success", data: activities });
