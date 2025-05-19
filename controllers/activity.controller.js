@@ -1,4 +1,5 @@
 const { Activity, User } = require("../models");
+const sequelize = require('../config/db');
 
 class ActivityController {
 
@@ -21,6 +22,12 @@ class ActivityController {
             model: User,
             as: 'Approver',
             attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: sequelize.models.Campaign,
+            as: 'Campaign',
+            attributes: ['id', 'name', 'semester_no', 'academic_year'],
             required: false
           }
         ]
@@ -53,6 +60,12 @@ class ActivityController {
             as: 'Approver',
             attributes: ['id', 'user_name', 'email'],
             required: false
+          },
+          {
+            model: sequelize.models.Campaign,
+            as: 'Campaign',
+            attributes: ['id', 'name', 'semester_no', 'academic_year'],
+            required: false
           }
         ]
       });
@@ -80,6 +93,12 @@ class ActivityController {
             model: User,
             as: 'Creator',
             attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: sequelize.models.Campaign,
+            as: 'Campaign',
+            attributes: ['id', 'name', 'semester_no', 'academic_year'],
             required: false
           }
         ]
@@ -111,6 +130,12 @@ class ActivityController {
             model: User,
             as: 'Approver',
             attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: sequelize.models.Campaign,
+            as: 'Campaign',
+            attributes: ['id', 'name', 'semester_no', 'academic_year'],
             required: false
           }
         ]
@@ -334,6 +359,42 @@ class ActivityController {
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Lỗi máy chủ khi import hoạt động." });
+    }
+  }
+
+  static async getCreatedPendingActivities(req, res) {
+    const userId = req.user.id;
+    
+    try {
+      const activities = await Activity.findAll({
+        where: { 
+          created_by: userId,
+          approver_id: null 
+        },
+        attributes: [
+          'id', 'campaign_id', 'name', 'point', 'max_participants',
+          'number_students', 'status', 'registration_start', 'registration_end',
+          'approver_id', 'approved_at', 'created_by', 'created_at'
+        ],
+        include: [
+          {
+            model: User,
+            as: 'Creator',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: sequelize.models.Campaign,
+            as: 'Campaign',
+            attributes: ['id', 'name', 'semester_no', 'academic_year'],
+            required: false
+          }
+        ]
+      });
+      res.status(200).json({ status: "success", data: { activities } });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
 }

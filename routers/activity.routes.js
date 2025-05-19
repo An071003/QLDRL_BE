@@ -12,6 +12,9 @@ router.get("/pending", authenticateUser, ActivityController.getPendingActivities
 // Get approved activities
 router.get("/approved", authenticateUser, ActivityController.getApprovedActivities);
 
+// Get activities created by current user that are pending approval
+router.get("/created-pending", authenticateUser, ActivityController.getCreatedPendingActivities);
+
 // Approve an activity
 router.put("/:id/approve", authenticateUser, ActivityController.approveActivity);
 

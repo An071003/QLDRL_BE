@@ -1,6 +1,6 @@
 const express = require("express");
 const DepartmentOfficerController = require("../controllers/departmentOfficer.controller");
-const {authenticateUser} = require("../middlewares/authMiddleware")
+const { authenticateUser } = require("../middlewares/authMiddleware")
 const router = express.Router();
 
 // Get all department officers
@@ -8,6 +8,9 @@ router.get("/", authenticateUser, DepartmentOfficerController.getAllDepartmentOf
 
 // Get a department officer by ID
 router.get("/:id", authenticateUser, DepartmentOfficerController.getDepartmentOfficerById);
+
+// Get a department officer by user ID
+router.get("/user/:userId", authenticateUser, DepartmentOfficerController.getDepartmentOfficerByUserId);
 
 // Create a new department officer
 router.post("/", authenticateUser, DepartmentOfficerController.createDepartmentOfficer);

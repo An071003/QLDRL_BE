@@ -6,8 +6,8 @@ const emailMiddleware = require("../middlewares/emailMiddleware");
 
 class DepartmentOfficerController {
   static generateRandomPassword = () => {
-      return crypto.randomBytes(8).toString("hex");
-    };
+    return crypto.randomBytes(8).toString("hex");
+  };
 
   static async getAllDepartmentOfficers(req, res) {
     try {
@@ -262,6 +262,30 @@ class DepartmentOfficerController {
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getDepartmentOfficerByUserId(req, res) {
+    try {
+      const { userId } = req.params;
+
+      const departmentOfficer = await DepartmentOfficer.findOne({
+        where: { user_id: userId },
+        include: [
+          {
+            model: User,
+            attributes: ['email'],
+          },
+        ],
+      });
+
+      if (!departmentOfficer) {
+        return res.status(404).json({ message: "Department Officer not found" });
+      }
+
+      res.status(200).json({ departmentOfficer });
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
     }
   }
 }

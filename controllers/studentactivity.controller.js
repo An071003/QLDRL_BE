@@ -91,19 +91,26 @@ class StudentActivityController {
     const register_id = req.user.id;
 
     try {
-      const pointResult = await Activity.findOne({
+      const activity = await Activity.findOne({
         where: { id: activityId },
-        attributes: ['point'],
+        attributes: ['point', 'approver_id'],
       });
 
-      if (!pointResult) {
-        return res.status(400).json({ message: 'Không tìm thấy điểm cho hoạt động này.' });
+      if (!activity) {
+        return res.status(400).json({ message: 'Không tìm thấy hoạt động này.' });
+      }
+
+      // Check if the activity is approved
+      if (activity.approver_id === null) {
+        return res.status(403).json({ 
+          message: 'Không thể đăng ký sinh viên cho hoạt động chưa được phê duyệt.' 
+        });
       }
 
       const studentList = studentIds.map(student_id => ({
         student_id,
         activity_id: activityId,
-        awarded_score: pointResult.point,
+        awarded_score: activity.point,
         register_id
       }));
 
@@ -125,6 +132,21 @@ class StudentActivityController {
     }
 
     try {
+      // Check if the activity is approved
+      const activity = await Activity.findByPk(activityId, {
+        attributes: ['approver_id']
+      });
+
+      if (!activity) {
+        return res.status(404).json({ message: 'Không tìm thấy hoạt động.' });
+      }
+
+      if (activity.approver_id === null) {
+        return res.status(403).json({ 
+          message: 'Không thể thay đổi trạng thái tham gia cho hoạt động chưa được phê duyệt.' 
+        });
+      }
+
       const [updatedCount] = await StudentActivity.update(
         { participated },
         {
@@ -183,11 +205,18 @@ class StudentActivityController {
 
     try {
       const activity = await Activity.findByPk(activityId, {
-        attributes: ['point']
+        attributes: ['point', 'approver_id']
       });
 
       if (!activity) {
-        return res.status(400).json({ message: 'Không tìm thấy điểm cho hoạt động này.' });
+        return res.status(400).json({ message: 'Không tìm thấy hoạt động này.' });
+      }
+
+      // Check if the activity is approved
+      if (activity.approver_id === null) {
+        return res.status(403).json({ 
+          message: 'Không thể đăng ký sinh viên cho hoạt động chưa được phê duyệt.' 
+        });
       }
 
       const mssvList = students.map(s => s.mssv);
