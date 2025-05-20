@@ -3,22 +3,11 @@ const CampaignController = require("../controllers/campaign.controller");
 const { authenticateUser, authorizeRoles, authorizePermissions } = require("../middlewares/authMiddleware");
 const router = express.Router();
 
-// Get all campaigns
-router.get("/", authenticateUser, CampaignController.getAllCampaigns);
-
-// Get a campaign by ID
-router.get("/:id", authenticateUser, CampaignController.getCampaignById);
-
-// Create a new campaign
-router.post("/", authenticateUser, CampaignController.createCampaign);
-
-// Update a campaign
-router.put("/:id", authenticateUser, CampaignController.updateCampaign);
-
-// Delete a campaign
-router.delete("/:id", authenticateUser, CampaignController.deleteCampaign);
-
-// Import campaigns from an Excel file
-router.post('/import', authenticateUser, CampaignController.importCampaigns);
+router.get("/", authenticateUser, authorizePermissions('campaign:view'), CampaignController.getAllCampaigns);
+router.get("/:id", authenticateUser, authorizePermissions('campaign:view'), CampaignController.getCampaignById);
+router.post("/", authenticateUser, authorizePermissions('campaign:create'), CampaignController.createCampaign);
+router.put("/:id", authenticateUser, authorizePermissions('campaign:update'), CampaignController.updateCampaign);
+router.delete("/:id", authenticateUser, authorizePermissions('campaign:delete'), CampaignController.deleteCampaign);
+router.post('/import', authenticateUser, authorizePermissions('campaign:create'), CampaignController.importCampaigns);
 
 module.exports = router;

@@ -28,7 +28,7 @@ class AdvisorController {
           },
           {
             model: User,
-            attributes: ['email'],
+            attributes: ['user_name', 'email'],
           }
         ],
       });
@@ -49,7 +49,7 @@ class AdvisorController {
           },
           {
             model: Class,
-            attributes: ['id', 'name'],
+            attributes: ['id', 'name', 'cohort'],
           },
           {
             model: User,
@@ -198,7 +198,7 @@ class AdvisorController {
         const existingUser = await User.findOne({ where: { [Op.or]: [{ email }, { user_name: username }] } });
 
         if (existingUser) {
-          failed.push({ username, name, reason: "Email hoặc tên đăng nhập đã tồn tại" });
+          failed.push({ username, name, email, reason: "Email hoặc tên đăng nhập đã tồn tại" });
           continue;
         }
 
@@ -311,7 +311,7 @@ class AdvisorController {
               {
                 model: Faculty,
               }
-            ]
+            ],
           },
           {
             model: User,
@@ -323,7 +323,7 @@ class AdvisorController {
       if (!advisor) {
         return res.status(404).json({ message: "Advisor not found" });
       }
-      
+
       res.status(200).json({ advisor });
     } catch (err) {
       res.status(500).json({ message: "Server error", error: err.message });

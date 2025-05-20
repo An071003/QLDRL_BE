@@ -1,26 +1,15 @@
 const express = require("express");
 const AdvisorController = require("../controllers/advisor.controller");
-const { authenticateUser } = require('../middlewares/authMiddleware');
+const { authenticateUser, authorizePermissions } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-// Get all advisors
-router.get("/", AdvisorController.getAllAdvisors);
-
-// Get an advisor by user ID
-router.get("/user/:userId", authenticateUser, AdvisorController.getAdvisorByUserId);
-
-// Get an advisor by ID
-router.get("/:id", AdvisorController.getAdvisorById);
-
-// Create a new advisor
-router.post("/", authenticateUser, AdvisorController.createAdvisor);
-router.post("/import", AdvisorController.importAdvisorsFromExcel);
-
-// Update an advisor
-router.put("/:id", AdvisorController.updateAdvisor);
-
-// Delete an advisor
-router.delete("/:id", AdvisorController.deleteAdvisor);
+router.get("/", authenticateUser, authorizePermissions('advisor:view'), AdvisorController.getAllAdvisors);
+router.get("/user/:userId", authenticateUser, authorizePermissions('advisor:view'), AdvisorController.getAdvisorByUserId);
+router.get("/:id", authenticateUser, authorizePermissions('advisor:view'), AdvisorController.getAdvisorById);
+router.post("/", authenticateUser, authorizePermissions('advisor:create'), AdvisorController.createAdvisor);
+router.post("/import", authenticateUser, authorizePermissions('advisor:create'), AdvisorController.importAdvisorsFromExcel);
+router.put("/:id", authenticateUser, authorizePermissions('advisor:update'), AdvisorController.updateAdvisor);
+router.delete("/:id", authenticateUser, authorizePermissions('advisor:delete'), AdvisorController.deleteAdvisor);
 
 module.exports = router;

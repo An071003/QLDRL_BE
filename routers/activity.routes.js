@@ -3,37 +3,16 @@ const ActivityController = require("../controllers/activity.controller");
 const { authenticateUser, authorizeRoles, authorizePermissions } = require("../middlewares/authMiddleware");
 const router = express.Router();
 
-// Get all activities
-router.get("/", authenticateUser, ActivityController.getAllActivities);
-
-// Get pending activities (not approved)
-router.get("/pending", authenticateUser, ActivityController.getPendingActivities);
-
-// Get approved activities
-router.get("/approved", authenticateUser, ActivityController.getApprovedActivities);
-
-// Get activities created by current user that are pending approval
-router.get("/created-pending", authenticateUser, ActivityController.getCreatedPendingActivities);
-
-// Approve an activity
-router.put("/:id/approve", authenticateUser, ActivityController.approveActivity);
-
-// Reject an activity
-router.put("/:id/reject", authenticateUser, ActivityController.rejectActivity);
-
-// Get an activity by ID
-router.get("/:id", authenticateUser, ActivityController.getActivityById);
-
-// Create a new activity
-router.post("/", authenticateUser, ActivityController.createActivity);
-
-// Update an activity
-router.put("/:id", authenticateUser, ActivityController.updateActivity);
-
-// Delete an activity
-router.delete("/:id", authenticateUser, ActivityController.deleteActivity);
-
-// Import activities
-router.post("/import", authenticateUser, ActivityController.importActivities);
+router.get("/", authenticateUser, authorizePermissions('activity:view'), ActivityController.getAllActivities);
+router.get("/pending", authenticateUser, authorizePermissions('activity:view'), ActivityController.getPendingActivities);
+router.get("/approved", authenticateUser, authorizePermissions('activity:view'), ActivityController.getApprovedActivities);
+router.get("/created-pending", authenticateUser, authorizePermissions('activity:view'), ActivityController.getCreatedPendingActivities);
+router.put("/:id/approve", authenticateUser, authorizePermissions('activity:update'), ActivityController.approveActivity);
+router.put("/:id/reject", authenticateUser, authorizePermissions('activity:update'), ActivityController.rejectActivity);
+router.get("/:id", authenticateUser, authorizePermissions('activity:view'), ActivityController.getActivityById);
+router.post("/", authenticateUser, authorizePermissions('activity:create'), ActivityController.createActivity);
+router.put("/:id", authenticateUser, authorizePermissions('activity:update'), ActivityController.updateActivity);
+router.delete("/:id", authenticateUser, authorizePermissions('activity:delete'), ActivityController.deleteActivity);
+router.post("/import", authenticateUser, authorizePermissions('activity:create'), ActivityController.importActivities);
 
 module.exports = router;

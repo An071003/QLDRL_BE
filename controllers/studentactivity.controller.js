@@ -342,7 +342,8 @@ class StudentActivityController {
         order: [
           ['academic_year', 'DESC'],
           ['semester_no', 'DESC']
-        ]
+        ], 
+        attributes: ['semester_no', 'academic_year']
       });
 
       if (!latestCampaign) {
@@ -355,7 +356,7 @@ class StudentActivityController {
         where: { academic_year, semester_no },
         attributes: ['id']
       });
-
+      
       const campaignIds = campaigns.map(c => c.id);
 
       const registeredActivities = await StudentActivity.findAll({

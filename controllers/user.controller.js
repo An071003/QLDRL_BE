@@ -192,7 +192,7 @@ class UserController {
                 limit(async () => {
                     const role = await Role.findByPk(newUser.role_id);
                     const originalUser = validUsers[index];
-
+                    
                     if (role.name === 'student') {
                         await Student.create({ user_id: newUser.id, student_id: originalUser.user_name });
                     } else if (role.name === 'advisor') {
