@@ -58,6 +58,10 @@ class StudentController {
         return res.status(400).json({ message: "Thiếu thông tin bắt buộc." });
       }
 
+      const existingStudentId = Student.findByPk(student_id);
+      if(existingStudentId){
+        return res.status(400).json({ message: "Mã số sinh viên đã tồn tại" });
+      }
       const role = await Role.findOne({ where: { name: 'student' }, attributes: ['id'] });
       if (!role) {
         return res.status(400).json({ message: "Không tìm thấy role 'student'." });
