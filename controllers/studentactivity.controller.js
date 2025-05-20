@@ -99,8 +99,7 @@ class StudentActivityController {
       if (!activity) {
         return res.status(400).json({ message: 'Không tìm thấy hoạt động này.' });
       }
-
-      // Check if the activity is approved
+      
       if (activity.approver_id === null) {
         return res.status(403).json({ 
           message: 'Không thể đăng ký sinh viên cho hoạt động chưa được phê duyệt.' 
