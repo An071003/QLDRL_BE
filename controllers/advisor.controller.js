@@ -11,8 +11,12 @@ class AdvisorController {
 
   static async getAllAdvisors(req, res) {
     try {
+      const { faculty_id } = req.query;
+      
+      const whereClause = faculty_id ? { faculty_id } : {};
 
       const advisors = await Advisor.findAll({
+        where: whereClause,
         include: [
           {
             model: Faculty,

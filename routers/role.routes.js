@@ -5,9 +5,9 @@ const { authenticateUser, authorizePermissions, authorizeRoles } = require('../m
 const router = express.Router();
 
 router.get('/', RoleController.getAllRoles);
-router.get('/:id', authenticateUser, authorizeRoles('admin'), authorizePermissions('role:view'), RoleController.getRolesById);
-router.post('/', authenticateUser, authorizeRoles('admin'), authorizePermissions('role:create'), RoleController.createRole);
-router.put('/:id', authenticateUser, authorizeRoles('admin'), authorizePermissions('role:update'), RoleController.updateRole);
-router.delete('/:id', authenticateUser, authorizeRoles('admin'), authorizePermissions('role:delete'), RoleController.deleteRole);
+router.get('/:id', authenticateUser, authorizePermissions('role:view'), RoleController.getRolesById);
+router.post('/', authenticateUser, authorizePermissions('role:create'), RoleController.createRole);
+router.put('/:id', authenticateUser, authorizePermissions('role:update'), RoleController.updateRole);
+router.delete('/:id', authenticateUser, authorizePermissions('role:delete'), RoleController.deleteRole);
 
 module.exports = router;
