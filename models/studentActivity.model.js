@@ -115,7 +115,7 @@ const sequelize = require('../config/db');
 const StudentActivity = sequelize.define('StudentActivity', {
   student_id: { type: DataTypes.STRING(8), primaryKey: true },
   activity_id: { type: DataTypes.INTEGER, primaryKey: true },
-  participated: { type: DataTypes.BOOLEAN, defaultValue: true },
+  participated: { type: DataTypes.BOOLEAN, defaultValue: false },
   awarded_score: { type: DataTypes.INTEGER, defaultValue: 0 },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   register_id: { type: DataTypes.INTEGER },

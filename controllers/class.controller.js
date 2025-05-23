@@ -107,25 +107,17 @@ class ClassController {
         return res.status(404).json({ message: 'Không tìm thấy lớp.' });
       }
 
-      // Get the old class leader ID if it exists
       const oldClassLeaderId = classItem.class_leader_id;
-      
-      // Update the class with new information
       await classItem.update({ name, faculty_id, cohort, class_leader_id, advisor_id }, { transaction });
-      
-      // If there's a new class leader, update their role to "classleader"
       if (class_leader_id && class_leader_id !== oldClassLeaderId) {
-        // Find the student to get their user_id
         const student = await Student.findByPk(class_leader_id, { transaction });
         if (student) {
-          // Get the role ID for "classleader"
           const [classleaderRole] = await sequelize.query(
             "SELECT id FROM roles WHERE name = 'classleader'",
             { type: sequelize.QueryTypes.SELECT, transaction }
           );
           
           if (classleaderRole && classleaderRole.id) {
-            // Update the user's role to class leader
             await sequelize.query(
               "UPDATE users SET role_id = ? WHERE id = ?",
               { 
@@ -138,19 +130,15 @@ class ClassController {
         }
       }
       
-      // If the old class leader is being replaced or removed, revert their role back to "student"
       if (oldClassLeaderId && oldClassLeaderId !== class_leader_id) {
-        // Find the student to get their user_id
         const oldStudent = await Student.findByPk(oldClassLeaderId, { transaction });
         if (oldStudent) {
-          // Get the role ID for "student"
           const [studentRole] = await sequelize.query(
             "SELECT id FROM roles WHERE name = 'student'",
             { type: sequelize.QueryTypes.SELECT, transaction }
           );
           
           if (studentRole && studentRole.id) {
-            // Update the user's role back to student
             await sequelize.query(
               "UPDATE users SET role_id = ? WHERE id = ?",
               { 

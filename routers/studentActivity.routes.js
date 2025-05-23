@@ -14,7 +14,7 @@ router.post('/:activityId/import', authenticateUser, authorizePermissions('stude
 router.post("/", authenticateUser, authorizePermissions('studentactivity:create'), StudentActivityController.createStudentActivity);
 router.patch("/:activityId", authenticateUser, authorizePermissions('studentactivity:update'), StudentActivityController.editStudentParticipation);
 router.put("/:id", authenticateUser, authorizePermissions('studentactivity:update'), StudentActivityController.updateStudentActivity);
-router.delete("/:activityId/students/:studentIds", authorizePermissions('studentactivity:delete'), authenticateUser, StudentActivityController.removeStudent)
+router.delete("/:activityId/students/:studentIds", authenticateUser, authorizePermissions('studentactivity:delete'), authenticateUser, StudentActivityController.removeStudent)
 router.delete("/:id", authenticateUser, authorizePermissions('studentactivity:delete'), StudentActivityController.deleteStudentActivity);
 
 module.exports = router;
