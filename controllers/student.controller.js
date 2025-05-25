@@ -58,6 +58,12 @@ class StudentController {
         return res.status(400).json({ message: "Thiếu thông tin bắt buộc." });
       }
 
+      const existingStudentId = await Student.findOne({ where: { student_id } });
+
+      if (existingStudentId) {
+        return res.status(400).json({ message: "Mã số sinh viên đã tồn tại" });
+      }
+
       const role = await Role.findOne({ where: { name: 'student' }, attributes: ['id'] });
       if (!role) {
         return res.status(400).json({ message: "Không tìm thấy role 'student'." });
@@ -211,6 +217,13 @@ class StudentController {
 
         if (existingUser) {
           failed.push({ student_id, student_name, reason: "Email đã tồn tại" });
+          continue;
+        }
+
+        const existingStudentId = await Student.findOne({ where: { student_id } });
+
+        if (existingStudentId) {
+          failed.push({ student_id, student_name, reason: "Mã số sinh viên đã tồn tại" });
           continue;
         }
 
@@ -371,6 +384,86 @@ class StudentController {
     }
   }
 
+  static async getStudentByUserId(req, res) {
+    try {
+      const { userId } = req.params;
+      
+      const student = await Student.findOne({
+        where: { user_id: userId },
+        include: [
+          {
+            model: Faculty,
+            attributes: ['id', 'name', 'faculty_abbr'],
+          },
+          {
+            model: Class,
+            include: [
+              {
+                model: Faculty,
+              }
+            ]
+          },
+          {
+            model: User,
+            attributes: ['email'],
+          },
+        ],
+      });
+      
+      if (!student) {
+        return res.status(404).json({ message: "Class Leader not found" });
+      }
+      
+      res.status(200).json({ student });
+    } catch (err) {
+      res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
+
+  static async getStudentsByClassleaderId(req, res) {
+    try {
+      const user_id = req.user.id;
+      const classleader = await Student.findOne({
+        where: {},
+        include: [
+          {
+            model: User,
+            where: { id: user_id },
+            attributes: [],
+          },
+        ],
+        attributes: ['student_id'],
+      });
+
+      const students = await Student.findAll({
+        include: [
+          {
+            model: Class,
+            where: { class_leader_id: classleader.student_id },
+            attributes: ['name'],
+          },
+          {
+            model: Faculty,
+            attributes: ['faculty_abbr'],
+          },
+          {
+            model: User,
+            attributes: ['email'],
+          },
+        ],
+      });
+
+      return res.status(200).json({
+        status: 'success',
+        data: { students },
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        message: 'Lỗi máy chủ.',
+      });
+    }
+  }
 }
 
 module.exports = StudentController;

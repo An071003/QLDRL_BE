@@ -1,3 +1,4 @@
+const { where } = require("sequelize");
 const { Criteria } = require("../models");
 
 class CriteriaController {
@@ -32,10 +33,15 @@ class CriteriaController {
     const created_by = req.user.id;
 
     try {
-      if (!name || !max_score || !created_by) {
+
+      if (!name || max_score == undefined || !created_by) {
         return res.status(400).json({ message: "Thiếu thông tin." });
       }
 
+      const existingCriteria = await Criteria.findOne({ where: { name } });
+      if (existingCriteria) {
+        return res.status(409).json({ message: "Tiêu chí đã tồn tại." });
+      }
       const newCriteria = await Criteria.create({ name, max_score, created_by });
 
       res.status(201).json({ status: "success", data: { criteria: newCriteria } });
@@ -96,6 +102,12 @@ class CriteriaController {
         // Validate các trường cần thiết giống như create
         if (!name || max_score === undefined || !created_by) {
           failed.push({ criteria, reason: "Thiếu thông tin." });
+          continue;
+        }
+
+        const existingCriteria = await Criteria.findOne({ where: { name } });
+        if (existingCriteria) {
+          failed.push({ criteria, reason: "Đã tồn tại." })
           continue;
         }
 

@@ -1,29 +1,16 @@
 const express = require("express");
 const ClassController = require("../controllers/class.controller");
-const { authenticateUser, authorizeRoles } = require('../middlewares/authMiddleware');
+const { authenticateUser, authorizePermissions } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
-// Get all classes
-router.get("/", ClassController.getAllClasses);
-
-// Get a class by ID
-router.get("/:id", ClassController.getClassById);
-router.get('/:classId/details', ClassController.getStudentsAndAdvisorByClassId);
-
-// Get students by class ID
-router.get("/:id/students", ClassController.getStudentsByClassId);
-
-// Create a new class
-router.post("/", ClassController.createClass);
-
-// Update a class
-router.put("/:id", ClassController.updateClass);
-
-// Delete a class
-router.delete("/:id", ClassController.deleteClass);
-
-// Set or unset a class leader
-router.post("/:classId/set-class-leader", authenticateUser, authorizeRoles('advisor', 'departmentofficer', 'admin'), ClassController.setClassLeader);
+router.get("/", authenticateUser, authorizePermissions('class:view'), ClassController.getAllClasses);
+router.get("/:id", authenticateUser, authorizePermissions('class:view'), ClassController.getClassById);
+router.get('/:classId/details', authenticateUser, authorizePermissions('class:view'), ClassController.getStudentsAndAdvisorByClassId);
+router.get("/:id/students", authenticateUser, authorizePermissions('class:view'), ClassController.getStudentsByClassId);
+router.post("/", authenticateUser, authorizePermissions('class:create'), ClassController.createClass);
+router.post("/import", authenticateUser, authorizePermissions('class:create'), ClassController.importClasses);
+router.put("/:id", authenticateUser, authorizePermissions('class:update'), ClassController.updateClass);
+router.delete("/:id", authenticateUser, authorizePermissions('class:delete'), ClassController.deleteClass);
 
 module.exports = router;

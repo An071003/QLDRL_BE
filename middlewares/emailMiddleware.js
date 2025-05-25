@@ -84,7 +84,7 @@ const emailMiddleware = async (email, subject, htmlContent) => {
     }
 };
 
-cron.schedule("*/2 * * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
     try {
         const result = await EmailVerificationCode.destroy({
             where: {

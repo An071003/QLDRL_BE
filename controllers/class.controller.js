@@ -2,7 +2,7 @@ const Class = require('../models/class.model');
 const Faculty = require('../models/faculty.model');
 const Advisor = require('../models/advisor.model')
 const Student = require('../models/student.model')
-const { User, Role } = require('../models');
+const User = require('../models/user.model');
 const sequelize = require('../config/db');
 
 class ClassController {
@@ -173,63 +173,56 @@ class ClassController {
         return res.status(404).json({ message: 'Không tìm thấy lớp.' });
       }
 
-      // Check if class leader is being changed
-      const isClassLeaderChanged = classItem.class_leader_id !== class_leader_id;
-      
-      if (isClassLeaderChanged) {
-        // Get the student and classleader roles
-        const studentRole = await Role.findOne({ 
-          where: { name: 'student' },
-          transaction
-        });
-        
-        const classLeaderRole = await Role.findOne({ 
-          where: { name: 'classleader' },
-          transaction
-        });
-        
-        if (!studentRole || !classLeaderRole) {
-          await transaction.rollback();
-          return res.status(500).json({ message: 'Không tìm thấy vai trò cần thiết.' });
-        }
-
-        // If there was a previous class leader, revert their role to student
-        if (classItem.class_leader_id) {
-          const oldLeaderStudent = await Student.findByPk(classItem.class_leader_id, { transaction });
-          if (oldLeaderStudent) {
-            await User.update(
-              { role_id: studentRole.id },
+      const oldClassLeaderId = classItem.class_leader_id;
+      await classItem.update({ name, faculty_id, cohort, class_leader_id, advisor_id }, { transaction });
+      if (class_leader_id && class_leader_id !== oldClassLeaderId) {
+        const student = await Student.findByPk(class_leader_id, { transaction });
+        if (student) {
+          const [classleaderRole] = await sequelize.query(
+            "SELECT id FROM roles WHERE name = 'classleader'",
+            { type: sequelize.QueryTypes.SELECT, transaction }
+          );
+          
+          if (classleaderRole && classleaderRole.id) {
+            await sequelize.query(
+              "UPDATE users SET role_id = ? WHERE id = ?",
               { 
-                where: { id: oldLeaderStudent.user_id },
-                transaction
-              }
-            );
-          }
-        }
-
-        // If a new class leader is set, update their role
-        if (class_leader_id) {
-          const newLeaderStudent = await Student.findByPk(class_leader_id, { transaction });
-          if (newLeaderStudent) {
-            await User.update(
-              { role_id: classLeaderRole.id },
-              { 
-                where: { id: newLeaderStudent.user_id },
+                replacements: [classleaderRole.id, student.user_id],
+                type: sequelize.QueryTypes.UPDATE,
                 transaction
               }
             );
           }
         }
       }
-
-      await classItem.update({ name, faculty_id, cohort, class_leader_id, advisor_id }, { transaction });
-      await transaction.commit();
       
+      if (oldClassLeaderId && oldClassLeaderId !== class_leader_id) {
+        const oldStudent = await Student.findByPk(oldClassLeaderId, { transaction });
+        if (oldStudent) {
+          const [studentRole] = await sequelize.query(
+            "SELECT id FROM roles WHERE name = 'student'",
+            { type: sequelize.QueryTypes.SELECT, transaction }
+          );
+          
+          if (studentRole && studentRole.id) {
+            await sequelize.query(
+              "UPDATE users SET role_id = ? WHERE id = ?",
+              { 
+                replacements: [studentRole.id, oldStudent.user_id],
+                type: sequelize.QueryTypes.UPDATE,
+                transaction
+              }
+            );
+          }
+        }
+      }
+      
+      await transaction.commit();
       res.status(200).json({ status: 'success', data: { class: classItem } });
     } catch (err) {
       await transaction.rollback();
-      console.error('Error updating class:', err);
-      res.status(500).json({ message: 'Lỗi máy chủ khi cập nhật lớp.' });
+      console.error("Error updating class:", err);
+      res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }
 

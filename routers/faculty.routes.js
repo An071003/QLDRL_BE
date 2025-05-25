@@ -3,23 +3,12 @@ const FacultyController = require("../controllers/faculty.controller");
 const { authenticateUser, authorizeRoles, authorizePermissions } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
-// Get all faculties
-router.get("/", authenticateUser, FacultyController.getAllFaculties);
-
-// Get a faculty by ID
-router.get('/:facultyId/classes', FacultyController.getClassesByFacultyId);
-router.get("/:id", FacultyController.getFacultyById);
-
-// Create a new faculty
-router.post("/", FacultyController.createFaculty);
-
-// Import faculties from Excel
-router.post("/import", FacultyController.importFaculties);
-
-// Update a faculty
-router.put("/:id", FacultyController.updateFaculty);
-
-// Delete a faculty
-router.delete("/:id", FacultyController.deleteFaculty);
+router.get("/", authenticateUser, authorizePermissions('faculty:view'), FacultyController.getAllFaculties);
+router.get('/:facultyId/classes', authenticateUser, authorizePermissions('faculty:view'), FacultyController.getClassesByFacultyId);
+router.get("/:id", authenticateUser, authorizePermissions('faculty:view'), FacultyController.getFacultyById);
+router.post("/", authenticateUser, authorizePermissions('faculty:create'), FacultyController.createFaculty);
+router.post("/import", authenticateUser, authorizePermissions('faculty:create'), FacultyController.importFaculties);
+router.put("/:id", authenticateUser, authorizePermissions('faculty:update'), FacultyController.updateFaculty);
+router.delete("/:id", authenticateUser, authorizePermissions('faculty:delete'), FacultyController.deleteFaculty);
 
 module.exports = router;

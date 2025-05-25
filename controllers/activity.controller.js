@@ -163,8 +163,8 @@ class ActivityController {
         approved_at: new Date()
       });
 
-      res.status(200).json({ 
-        status: "success", 
+      res.status(200).json({
+        status: "success",
         message: "Phê duyệt hoạt động thành công."
       });
     } catch (err) {
@@ -184,8 +184,8 @@ class ActivityController {
       }
 
       await activity.destroy();
-      res.status(200).json({ 
-        status: "success", 
+      res.status(200).json({
+        status: "success",
         message: "Từ chối hoạt động thành công."
       });
     } catch (err) {
@@ -211,15 +211,23 @@ class ActivityController {
         return res.status(400).json({ message: "Thiếu thông tin." });
       }
 
+      const existingActivity = await Activity.findOne({
+        where: { name }
+      });
+
+      if (existingActivity) {
+        return res.status(409).json({ message: "Hoạt động đã tồn tại." });
+      }
+
       const newActivity = await Activity.create({
-        campaign_id, 
-        name, 
-        point, 
+        campaign_id,
+        name,
+        point,
         max_participants,
-        registration_start, 
+        registration_start,
         registration_end,
         created_by,
-        status: "ongoing", // default nếu chưa truyền
+        status: "ongoing",
       });
 
       res.status(201).json({ status: "success", data: { activity: newActivity } });
@@ -242,25 +250,25 @@ class ActivityController {
       if (!activity) {
         return res.status(404).json({ message: "Hoạt động không tồn tại." });
       }
-      
+
       // Nếu hoạt động đã được phê duyệt, update sẽ xóa approver_id và approved_at
       // để yêu cầu phê duyệt lại
       const updateData = {
-        campaign_id, 
-        name, 
-        point, 
+        campaign_id,
+        name,
+        point,
         max_participants,
-        registration_start, 
+        registration_start,
         registration_end,
         status
       };
-      
+
       // Nếu hoạt động đã được phê duyệt trước đó, cần phê duyệt lại sau khi chỉnh sửa
       if (activity.approver_id) {
         updateData.approver_id = null;
         updateData.approved_at = null;
       }
-      
+
       await activity.update(updateData);
 
       res.status(200).json({ status: "success", message: "Cập nhật hoạt động thành công." });
@@ -315,6 +323,15 @@ class ActivityController {
           continue;
         }
 
+        const existingActivity = await Activity.findOne({
+          where: { name }
+        });
+
+        if (existingActivity) {
+          failed.push({ activity: a, reason: "Hoạt động đã tồn tại." });
+          continue;
+        }
+
         // Có thể kiểm tra thêm point/max_participants là số >= 0 nếu muốn
         const pointNum = Number(point);
         const maxPartNum = Number(max_participants);
@@ -330,12 +347,12 @@ class ActivityController {
         }
 
         validActivities.push({
-          campaign_id, 
-          name, 
-          point: pointNum, 
+          campaign_id,
+          name,
+          point: pointNum,
           max_participants: maxPartNum,
-          registration_start, 
-          registration_end, 
+          registration_start,
+          registration_end,
           created_by,
           status: status || 'ongoing'
         });
@@ -364,12 +381,12 @@ class ActivityController {
 
   static async getCreatedPendingActivities(req, res) {
     const userId = req.user.id;
-    
+
     try {
       const activities = await Activity.findAll({
-        where: { 
+        where: {
           created_by: userId,
-          approver_id: null 
+          approver_id: null
         },
         attributes: [
           'id', 'campaign_id', 'name', 'point', 'max_participants',

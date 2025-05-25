@@ -100,8 +100,7 @@ class StudentActivityController {
       if (!activity) {
         return res.status(400).json({ message: 'Không tìm thấy hoạt động này.' });
       }
-
-      // Check if the activity is approved
+      
       if (activity.approver_id === null) {
         return res.status(403).json({ 
           message: 'Không thể đăng ký sinh viên cho hoạt động chưa được phê duyệt.' 
@@ -509,7 +508,8 @@ class StudentActivityController {
         order: [
           ['academic_year', 'DESC'],
           ['semester_no', 'DESC']
-        ]
+        ], 
+        attributes: ['semester_no', 'academic_year']
       });
 
       if (!latestCampaign) {
@@ -522,7 +522,7 @@ class StudentActivityController {
         where: { academic_year, semester_no },
         attributes: ['id']
       });
-
+      
       const campaignIds = campaigns.map(c => c.id);
 
       const registeredActivities = await StudentActivity.findAll({
