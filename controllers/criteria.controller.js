@@ -34,7 +34,7 @@ class CriteriaController {
 
     try {
 
-      if (!name || !max_score || !created_by) {
+      if (!name || max_score == undefined || !created_by) {
         return res.status(400).json({ message: "Thiếu thông tin." });
       }
 
