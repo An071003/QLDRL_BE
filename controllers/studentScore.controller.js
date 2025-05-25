@@ -77,7 +77,6 @@ class StudentScoreController {
           'classification'
         ]
       });
-      console.log(count, rows);
       return res.status(200).json({ 
         status: "success", 
         data: { 
@@ -915,9 +914,7 @@ class StudentScoreController {
 
   static async getCohortOverview(req, res) {
     try {
-      console.log('getCohortOverview called');
       const { cohortYear } = req.params;
-      console.log('cohortYear:', cohortYear);
 
       const cohortStats = await db.query(`
         WITH student_stats AS (
@@ -963,8 +960,6 @@ class StudentScoreController {
         replacements: { cohortYear },
         type: QueryTypes.SELECT
       });
-
-      console.log('Cohort stats:', cohortStats);
 
       res.status(200).json({ 
         status: "success", 
