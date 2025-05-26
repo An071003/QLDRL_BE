@@ -788,21 +788,13 @@ class StudentScoreController {
         });
       }
 
+      // Thống kê chỉ dùng bảng students
       const classStats = await db.query(`
-        WITH student_semester_counts AS (
-          SELECT 
-            student_id,
-            COUNT(DISTINCT CONCAT(semester_no, '_', academic_year)) as semester_count,
-            SUM(score) as total_score
-          FROM student_score
-          WHERE classification IS NOT NULL
-          GROUP BY student_id
-        )
         SELECT 
           c.name as class_name,
           f.faculty_abbr,
           COUNT(*) as total_students,
-          CAST(ROUND(AVG(total_score / NULLIF(semester_count, 0)), 2) AS DECIMAL(10,2)) as average_score,
+          CAST(ROUND(AVG(s.sumscore), 2) AS DECIMAL(10,2)) as average_score,
           SUM(CASE WHEN s.classification = 'Xuất sắc' THEN 1 ELSE 0 END) as excellent_count,
           SUM(CASE WHEN s.classification = 'Tốt' THEN 1 ELSE 0 END) as good_count,
           SUM(CASE WHEN s.classification = 'Khá' THEN 1 ELSE 0 END) as fair_count,
@@ -826,11 +818,11 @@ class StudentScoreController {
         FROM students s
         JOIN classes c ON s.class_id = c.id
         JOIN faculties f ON s.faculty_id = f.id
-        LEFT JOIN student_semester_counts sc ON s.student_id = sc.student_id
         WHERE s.classification IS NOT NULL
         AND c.cohort = :cohortYear
         GROUP BY c.id, c.name, f.faculty_abbr
-        ORDER BY average_score DESC`, {
+        ORDER BY average_score DESC
+      `, {
         replacements: { cohortYear: cohortYearNum },
         type: QueryTypes.SELECT
       });
@@ -1661,8 +1653,8 @@ class StudentScoreController {
     try {
       const { cohortYear, semesterNo, academicYear } = req.params;
       const cohortYearNum = Number(cohortYear);
-
-      // Validate the requested cohort year
+  
+      // Lấy 10 khóa gần nhất để kiểm tra
       const validCohorts = await db.query(`
         SELECT DISTINCT cohort
         FROM classes
@@ -1672,7 +1664,7 @@ class StudentScoreController {
       `, {
         type: QueryTypes.SELECT
       });
-
+  
       const validCohortYears = validCohorts.map(c => c.cohort);
       
       if (!validCohortYears.includes(cohortYearNum)) {
@@ -1681,60 +1673,60 @@ class StudentScoreController {
           message: "Chỉ có thể xem thống kê của 10 khóa gần nhất" 
         });
       }
-
+  
+      // Thống kê theo lớp
       const classStats = await db.query(`
+        WITH student_scores AS (
+          SELECT 
+            ss.student_id,
+            ss.score,
+            ss.classification
+          FROM student_score ss
+          WHERE ss.semester_no = :semesterNo
+            AND ss.academic_year = :academicYear
+            AND ss.classification IS NOT NULL
+        )
+        
         SELECT 
           c.name as class_name,
           f.faculty_abbr,
           COUNT(DISTINCT s.student_id) as total_students,
-          CAST(ROUND(AVG(ss.score), 2) AS DECIMAL(10,2)) as average_score,
-          SUM(CASE WHEN ss.classification = 'Xuất sắc' THEN 1 ELSE 0 END) as excellent_count,
-          SUM(CASE WHEN ss.classification = 'Tốt' THEN 1 ELSE 0 END) as good_count,
-          SUM(CASE WHEN ss.classification = 'Khá' THEN 1 ELSE 0 END) as fair_count,
-          SUM(CASE WHEN ss.classification = 'Trung bình' THEN 1 ELSE 0 END) as average_count,
-          SUM(CASE WHEN ss.classification = 'Yếu' THEN 1 ELSE 0 END) as poor_count,
-          ROUND(
-            SUM(CASE WHEN ss.classification = 'Xuất sắc' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2
-          ) as excellent_percentage,
-          ROUND(
-            SUM(CASE WHEN ss.classification = 'Tốt' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2
-          ) as good_percentage,
-          ROUND(
-            SUM(CASE WHEN ss.classification = 'Khá' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2
-          ) as fair_percentage,
-          ROUND(
-            SUM(CASE WHEN ss.classification = 'Trung bình' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2
-          ) as average_percentage,
-          ROUND(
-            SUM(CASE WHEN ss.classification = 'Yếu' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2
-          ) as poor_percentage
+          CAST(ROUND(AVG(sc.score), 2) AS DECIMAL(10,2)) as average_score,
+          SUM(CASE WHEN sc.classification = 'Xuất sắc' THEN 1 ELSE 0 END) as excellent_count,
+          SUM(CASE WHEN sc.classification = 'Tốt' THEN 1 ELSE 0 END) as good_count,
+          SUM(CASE WHEN sc.classification = 'Khá' THEN 1 ELSE 0 END) as fair_count,
+          SUM(CASE WHEN sc.classification = 'Trung bình' THEN 1 ELSE 0 END) as average_count,
+          SUM(CASE WHEN sc.classification = 'Yếu' THEN 1 ELSE 0 END) as poor_count,
+          ROUND(SUM(CASE WHEN sc.classification = 'Xuất sắc' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2) as excellent_percentage,
+          ROUND(SUM(CASE WHEN sc.classification = 'Tốt' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2) as good_percentage,
+          ROUND(SUM(CASE WHEN sc.classification = 'Khá' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2) as fair_percentage,
+          ROUND(SUM(CASE WHEN sc.classification = 'Trung bình' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2) as average_percentage,
+          ROUND(SUM(CASE WHEN sc.classification = 'Yếu' THEN 1 ELSE 0 END) * 100.0 / COUNT(DISTINCT s.student_id), 2) as poor_percentage
         FROM students s
+        JOIN student_scores sc ON s.student_id = sc.student_id
         JOIN classes c ON s.class_id = c.id
         JOIN faculties f ON s.faculty_id = f.id
-        JOIN student_score ss ON s.student_id = ss.student_id
         WHERE c.cohort = :cohortYear
-        AND ss.semester_no = :semesterNo
-        AND ss.academic_year = :academicYear
-        AND ss.classification IS NOT NULL
         GROUP BY c.id, c.name, f.faculty_abbr
-        ORDER BY average_score DESC`, {
-        replacements: { 
+        ORDER BY average_score DESC
+      `, {
+        replacements: {
           cohortYear: cohortYearNum,
           semesterNo,
           academicYear
         },
         type: QueryTypes.SELECT
       });
-
-      res.status(200).json({ 
-        status: "success", 
-        data: { classes: classStats } 
+  
+      return res.status(200).json({
+        status: "success",
+        data: { classes: classStats }
       });
     } catch (err) {
       console.error('Error in getClassStatsByCohortAndSemester:', err);
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
-}
+}  
 
 module.exports = StudentScoreController; 
