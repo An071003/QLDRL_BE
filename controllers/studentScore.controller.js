@@ -1727,6 +1727,351 @@ class StudentScoreController {
       res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
+
+  static async getAdvisorStudents(req, res) {
+    try {
+      const { advisorId } = req.params;
+      const { search, page = 1, limit = 20, sortField = 'score', sortOrder = 'desc' } = req.query;
+
+      let whereClause = {
+        classification: {
+          [db.Sequelize.Op.and]: [
+            { [db.Sequelize.Op.not]: null },
+            { [db.Sequelize.Op.ne]: '' }
+          ]
+        }
+      };
+
+      let includeClause = [
+        {
+          model: Faculty,
+          attributes: ['name', 'faculty_abbr'],
+          required: true
+        },
+        {
+          model: Class,
+          attributes: ['name'],
+          required: true,
+          where: {
+            advisor_id: advisorId
+          }
+        }
+      ];
+
+      // Add search condition
+      if (search) {
+        whereClause[db.Sequelize.Op.or] = [
+          { student_id: { [db.Sequelize.Op.like]: `%${search}%` } },
+          { student_name: { [db.Sequelize.Op.like]: `%${search}%` } }
+        ];
+      }
+
+      // Determine sort order
+      let order = [];
+      if (sortField === 'student_name') {
+        order.push(['student_name', sortOrder]);
+      } else if (sortField === 'faculty') {
+        order.push([{ model: Faculty }, 'name', sortOrder]);
+      } else if (sortField === 'class') {
+        order.push([{ model: Class }, 'name', sortOrder]);
+      } else if (sortField === 'score') {
+        order.push(['sumscore', sortOrder]);
+      }
+
+      // Add secondary sort by student name
+      if (sortField !== 'student_name') {
+        order.push(['student_name', 'ASC']);
+      }
+
+      const { count, rows } = await Student.findAndCountAll({
+        where: whereClause,
+        include: includeClause,
+        order: order,
+        offset: (page - 1) * limit,
+        limit: parseInt(limit),
+        distinct: true,
+        attributes: [
+          'student_id', 
+          'student_name',
+          'sumscore',
+          'status',
+          'classification'
+        ]
+      });
+
+      return res.status(200).json({ 
+        status: "success", 
+        data: { 
+          studentScores: rows.map(student => ({
+            student_id: student.student_id,
+            score: student.sumscore || 0,
+            status: student.status || 'none',
+            classification: student.classification,
+            Student: {
+              student_name: student.student_name,
+              Faculty: student.Faculty,
+              Class: student.Class
+            }
+          })),
+          pagination: {
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / limit)
+          }
+        } 
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getAdvisorStudentScoresBySemester(req, res) {
+    try {
+      const { advisorId, semesterNo, academicYear } = req.params;
+      const { search, page = 1, limit = 20, sortField = 'score', sortOrder = 'desc' } = req.query;
+
+      let whereClause = {
+        semester_no: semesterNo,
+        academic_year: academicYear,
+        classification: {
+          [db.Sequelize.Op.and]: [
+            { [db.Sequelize.Op.not]: null },
+            { [db.Sequelize.Op.ne]: '' }
+          ]
+        }
+      };
+
+      let includeClause = [
+        {
+          model: Student,
+          attributes: ['student_id', 'student_name'],
+          where: {},
+          required: true,
+          include: [
+            {
+              model: Faculty,
+              attributes: ['name', 'faculty_abbr'],
+              required: true
+            },
+            {
+              model: Class,
+              attributes: ['name'],
+              required: true,
+              where: {
+                advisor_id: advisorId
+              }
+            }
+          ]
+        }
+      ];
+
+      // Add search condition
+      if (search) {
+        includeClause[0].where[db.Sequelize.Op.or] = [
+          { student_id: { [db.Sequelize.Op.like]: `%${search}%` } },
+          { student_name: { [db.Sequelize.Op.like]: `%${search}%` } }
+        ];
+      }
+
+      // Determine sort order
+      let order = [];
+      if (sortField === 'student_name') {
+        order.push([{ model: Student }, 'student_name', sortOrder]);
+      } else if (sortField === 'faculty') {
+        order.push([{ model: Student }, { model: Faculty }, 'name', sortOrder]);
+      } else if (sortField === 'class') {
+        order.push([{ model: Student }, { model: Class }, 'name', sortOrder]);
+      } else {
+        order.push([sortField, sortOrder]);
+      }
+
+      // Add secondary sort by student name
+      if (sortField !== 'student_name') {
+        order.push([{ model: Student }, 'student_name', 'ASC']);
+      }
+
+      const { count, rows } = await StudentScore.findAndCountAll({
+        where: whereClause,
+        include: includeClause,
+        order: order,
+        offset: (page - 1) * limit,
+        limit: parseInt(limit),
+        distinct: true
+      });
+
+      res.status(200).json({ 
+        status: "success", 
+        data: { 
+          studentScores: rows,
+          pagination: {
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / limit)
+          }
+        } 
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getAdvisorClassStatsAll(req, res) {
+    try {
+      const { advisorId } = req.params;
+
+      // Thống kê theo khoa được chọn
+      const [facultyStats] = await db.query(`
+        WITH student_semester_counts AS (
+          SELECT 
+            student_id,
+            COUNT(DISTINCT CONCAT(semester_no, '_', academic_year)) as semester_count
+          FROM student_score
+          WHERE classification IS NOT NULL
+          GROUP BY student_id
+        )
+        SELECT 
+          f.faculty_abbr,
+          f.name as faculty_name,
+          COUNT(*) as total_students,
+          AVG(s.sumscore / NULLIF(sc.semester_count, 0)) as average_score,
+          SUM(CASE WHEN s.classification = 'Xuất sắc' THEN 1 ELSE 0 END) as excellent_count,
+          SUM(CASE WHEN s.classification = 'Tốt' THEN 1 ELSE 0 END) as good_count,
+          SUM(CASE WHEN s.classification = 'Khá' THEN 1 ELSE 0 END) as fair_count,
+          SUM(CASE WHEN s.classification = 'Trung bình' THEN 1 ELSE 0 END) as average_count,
+          SUM(CASE WHEN s.classification = 'Yếu' THEN 1 ELSE 0 END) as poor_count
+        FROM students s
+        JOIN faculties f ON s.faculty_id = f.id
+        JOIN classes c ON s.class_id = c.id
+        LEFT JOIN student_semester_counts sc ON s.student_id = sc.student_id
+        WHERE s.classification IS NOT NULL 
+        AND c.advisor_id = :advisorId
+        GROUP BY f.id, f.faculty_abbr, f.name
+      `, {
+        replacements: { advisorId },
+        type: QueryTypes.SELECT
+      });
+
+      // Thống kê theo từng lớp
+      const classStats = await db.query(`
+        WITH student_semester_counts AS (
+          SELECT 
+            student_id,
+            COUNT(DISTINCT CONCAT(semester_no, '_', academic_year)) as semester_count
+          FROM student_score
+          WHERE classification IS NOT NULL
+          GROUP BY student_id
+        )
+        SELECT 
+          c.name as class_name,
+          SUBSTRING(c.name, -4) as batch_year,
+          f.faculty_abbr,
+          COUNT(*) as total_students,
+          AVG(s.sumscore / NULLIF(sc.semester_count, 0)) as average_score,
+          SUM(CASE WHEN s.classification = 'Xuất sắc' THEN 1 ELSE 0 END) as excellent_count,
+          SUM(CASE WHEN s.classification = 'Tốt' THEN 1 ELSE 0 END) as good_count,
+          SUM(CASE WHEN s.classification = 'Khá' THEN 1 ELSE 0 END) as fair_count,
+          SUM(CASE WHEN s.classification = 'Trung bình' THEN 1 ELSE 0 END) as average_count,
+          SUM(CASE WHEN s.classification = 'Yếu' THEN 1 ELSE 0 END) as poor_count
+        FROM students s
+        JOIN classes c ON s.class_id = c.id
+        JOIN faculties f ON s.faculty_id = f.id
+        LEFT JOIN student_semester_counts sc ON s.student_id = sc.student_id
+        WHERE s.classification IS NOT NULL 
+        AND c.advisor_id = :advisorId
+        GROUP BY c.id, c.name, f.faculty_abbr
+        ORDER BY batch_year DESC, average_score DESC
+      `, {
+        replacements: { advisorId },
+        type: QueryTypes.SELECT
+      });
+
+      res.status(200).json({ 
+        status: "success", 
+        data: { 
+          faculty: facultyStats,
+          classes: classStats 
+        } 
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getAdvisorClassStatsBySemester(req, res) {
+    try {
+      const { advisorId, semesterNo, academicYear } = req.params;
+
+      // Thống kê theo khoa
+      const [facultyStats] = await db.query(`
+        SELECT 
+          f.faculty_abbr,
+          f.name as faculty_name,
+          COUNT(*) as total_students,
+          AVG(ss.score) as average_score,
+          SUM(CASE WHEN ss.classification = 'Xuất sắc' THEN 1 ELSE 0 END) as excellent_count,
+          SUM(CASE WHEN ss.classification = 'Tốt' THEN 1 ELSE 0 END) as good_count,
+          SUM(CASE WHEN ss.classification = 'Khá' THEN 1 ELSE 0 END) as fair_count,
+          SUM(CASE WHEN ss.classification = 'Trung bình' THEN 1 ELSE 0 END) as average_count,
+          SUM(CASE WHEN ss.classification = 'Yếu' THEN 1 ELSE 0 END) as poor_count
+        FROM student_score ss
+        JOIN students s ON ss.student_id = s.student_id
+        JOIN faculties f ON s.faculty_id = f.id
+        JOIN classes c ON s.class_id = c.id
+        WHERE ss.semester_no = :semesterNo 
+        AND ss.academic_year = :academicYear
+        AND ss.classification IS NOT NULL
+        AND c.advisor_id = :advisorId
+        GROUP BY f.id, f.faculty_abbr, f.name
+      `, {
+        replacements: { advisorId, semesterNo, academicYear },
+        type: QueryTypes.SELECT
+      });
+
+      // Thống kê theo từng lớp
+      const classStats = await db.query(`
+        SELECT 
+          c.name as class_name,
+          SUBSTRING(c.name, -4) as batch_year,
+          f.faculty_abbr,
+          COUNT(*) as total_students,
+          AVG(ss.score) as average_score,
+          SUM(CASE WHEN ss.classification = 'Xuất sắc' THEN 1 ELSE 0 END) as excellent_count,
+          SUM(CASE WHEN ss.classification = 'Tốt' THEN 1 ELSE 0 END) as good_count,
+          SUM(CASE WHEN ss.classification = 'Khá' THEN 1 ELSE 0 END) as fair_count,
+          SUM(CASE WHEN ss.classification = 'Trung bình' THEN 1 ELSE 0 END) as average_count,
+          SUM(CASE WHEN ss.classification = 'Yếu' THEN 1 ELSE 0 END) as poor_count
+        FROM student_score ss
+        JOIN students s ON ss.student_id = s.student_id
+        JOIN classes c ON s.class_id = c.id
+        JOIN faculties f ON s.faculty_id = f.id
+        WHERE ss.semester_no = :semesterNo 
+        AND ss.academic_year = :academicYear
+        AND ss.classification IS NOT NULL
+        AND c.advisor_id = :advisorId
+        GROUP BY c.id, c.name, f.faculty_abbr
+        ORDER BY batch_year DESC, average_score DESC
+      `, {
+        replacements: { advisorId, semesterNo, academicYear },
+        type: QueryTypes.SELECT
+      });
+
+      res.status(200).json({ 
+        status: "success", 
+        data: { 
+          faculty: facultyStats,
+          classes: classStats 
+        } 
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
 }  
 
 module.exports = StudentScoreController; 

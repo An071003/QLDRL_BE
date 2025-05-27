@@ -6,7 +6,9 @@ const router = express.Router();
 
 // Các routes cơ bản
 router.get("/students", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getAllStudents);
+router.get("/advisor/:advisorId/students", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getAdvisorStudents);
 router.get("/semester/:semesterNo/:academicYear", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getStudentScoresBySemester);
+router.get("/advisor/:advisorId/semester/:semesterNo/:academicYear", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getAdvisorStudentScoresBySemester);
 router.get("/current-semester", authenticateUser, StudentScoreController.getCurrentSemester);
 router.get("/semesters", authenticateUser, StudentScoreController.getSemesters);
 router.get("/batch-years", authenticateUser, StudentScoreController.getBatchYears);
@@ -26,6 +28,10 @@ router.get("/stats/cohort/:semesterNo/:academicYear", authenticateUser, authoriz
 router.get("/stats/faculty/all", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getStatsByStudentsFaculty);
 router.get("/stats/class/all", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getStatsByStudentsClass);
 router.get("/stats/cohort/all", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getStatsByStudentsCohort);
+
+// Routes thống kê theo lớp cho advisor
+router.get("/advisor/:advisorId/stats/class/all", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getAdvisorClassStatsAll);
+router.get("/advisor/:advisorId/stats/class/:semesterNo/:academicYear", authenticateUser, authorizePermissions('student:view'), StudentScoreController.getAdvisorClassStatsBySemester);
 
 // Quản lý học kỳ
 router.post("/new-semester", authenticateUser, authorizePermissions('student:update'), StudentScoreController.createNewSemester);

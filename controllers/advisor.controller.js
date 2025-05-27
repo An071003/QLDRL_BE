@@ -3,6 +3,9 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const { Advisor, Faculty, Class, Role, User } = require("../models");
 const emailMiddleware = require("../middlewares/emailMiddleware");
+const Student = require('../models/student.model');
+const StudentScore = require('../models/studentScore.model');
+const db = require('../config/db');
 
 class AdvisorController {
   static generateRandomPassword = () => {
@@ -327,6 +330,340 @@ class AdvisorController {
       res.status(200).json({ advisor });
     } catch (err) {
       res.status(500).json({ message: "Server error", error: err.message });
+    }
+  }
+
+  static async getMyClasses(req, res) {
+    try {
+      const advisorId = req.user.id;
+      
+      const advisor = await Advisor.findByPk(advisorId, {
+        include: [{
+          model: Class,
+          attributes: ['id', 'name']
+        }]
+      });
+
+      if (!advisor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Advisor not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          classes: advisor.Classes
+        }
+      });
+    } catch (error) {
+      console.error('Error getting advisor classes:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  static async getMyStudentsScores(req, res) {
+    try {
+      const advisorId = req.user.id;
+      
+      // Get all classes for this advisor
+      const advisor = await Advisor.findByPk(advisorId, {
+        include: [{
+          model: Class,
+          attributes: ['id']
+        }]
+      });
+
+      if (!advisor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Advisor not found'
+        });
+      }
+
+      const classIds = advisor.Classes.map(cls => cls.id);
+
+      // Get all students from these classes with their scores
+      const students = await Student.findAll({
+        where: {
+          class_id: {
+            [db.Sequelize.Op.in]: classIds
+          }
+        },
+        include: [
+          {
+            model: StudentScore,
+            required: false,
+            attributes: ['score', 'classification', 'semester_no', 'academic_year']
+          },
+          {
+            model: Faculty,
+            attributes: ['name', 'faculty_abbr']
+          },
+          {
+            model: Class,
+            attributes: ['name']
+          }
+        ],
+        attributes: ['student_id', 'student_name']
+      });
+
+      const formattedScores = students.flatMap(student => 
+        student.StudentScores.map(score => ({
+          student_id: student.student_id,
+          score: score.score,
+          classification: score.classification,
+          semester_no: score.semester_no,
+          academic_year: score.academic_year,
+          Student: {
+            student_name: student.student_name,
+            Faculty: student.Faculty,
+            Class: student.Class
+          }
+        }))
+      );
+
+      res.json({
+        success: true,
+        data: {
+          studentScores: formattedScores
+        }
+      });
+    } catch (error) {
+      console.error('Error getting student scores:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  static async getMyStudentsScoresBySemester(req, res) {
+    try {
+      const advisorId = req.user.id;
+      const { semesterNo, academicYear } = req.params;
+      
+      // Get all classes for this advisor
+      const advisor = await Advisor.findByPk(advisorId, {
+        include: [{
+          model: Class,
+          attributes: ['id']
+        }]
+      });
+
+      if (!advisor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Advisor not found'
+        });
+      }
+
+      const classIds = advisor.Classes.map(cls => cls.id);
+
+      // Get all students from these classes with their scores for the specified semester
+      const students = await Student.findAll({
+        where: {
+          class_id: {
+            [db.Sequelize.Op.in]: classIds
+          }
+        },
+        include: [
+          {
+            model: StudentScore,
+            required: false,
+            where: {
+              semester_no: semesterNo,
+              academic_year: academicYear
+            },
+            attributes: ['score', 'classification']
+          },
+          {
+            model: Faculty,
+            attributes: ['name', 'faculty_abbr']
+          },
+          {
+            model: Class,
+            attributes: ['name']
+          }
+        ],
+        attributes: ['student_id', 'student_name']
+      });
+
+      const formattedScores = students.map(student => ({
+        student_id: student.student_id,
+        score: student.StudentScores[0]?.score || 0,
+        classification: student.StudentScores[0]?.classification || 'Chưa có',
+        Student: {
+          student_name: student.student_name,
+          Faculty: student.Faculty,
+          Class: student.Class
+        }
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          studentScores: formattedScores
+        }
+      });
+    } catch (error) {
+      console.error('Error getting student scores by semester:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  static async getStudentScoresByClass(req, res) {
+    try {
+      const advisorId = req.user.id;
+      const { className } = req.params;
+      
+      // Verify that this advisor has access to this class
+      const advisor = await Advisor.findByPk(advisorId, {
+        include: [{
+          model: Class,
+          where: { name: className },
+          attributes: ['id']
+        }]
+      });
+
+      if (!advisor || !advisor.Classes.length) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have access to this class'
+        });
+      }
+
+      const classId = advisor.Classes[0].id;
+
+      // Get all students from this class with their scores
+      const students = await Student.findAll({
+        where: { class_id: classId },
+        include: [
+          {
+            model: StudentScore,
+            required: false,
+            attributes: ['score', 'classification', 'semester_no', 'academic_year']
+          },
+          {
+            model: Faculty,
+            attributes: ['name', 'faculty_abbr']
+          },
+          {
+            model: Class,
+            attributes: ['name']
+          }
+        ],
+        attributes: ['student_id', 'student_name']
+      });
+
+      const formattedScores = students.flatMap(student => 
+        student.StudentScores.map(score => ({
+          student_id: student.student_id,
+          score: score.score,
+          classification: score.classification,
+          semester_no: score.semester_no,
+          academic_year: score.academic_year,
+          Student: {
+            student_name: student.student_name,
+            Faculty: student.Faculty,
+            Class: student.Class
+          }
+        }))
+      );
+
+      res.json({
+        success: true,
+        data: {
+          studentScores: formattedScores
+        }
+      });
+    } catch (error) {
+      console.error('Error getting student scores by class:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  }
+
+  static async getStudentScoresByClassAndSemester(req, res) {
+    try {
+      const advisorId = req.user.id;
+      const { className, semesterNo, academicYear } = req.params;
+      
+      // Verify that this advisor has access to this class
+      const advisor = await Advisor.findByPk(advisorId, {
+        include: [{
+          model: Class,
+          where: { name: className },
+          attributes: ['id']
+        }]
+      });
+
+      if (!advisor || !advisor.Classes.length) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have access to this class'
+        });
+      }
+
+      const classId = advisor.Classes[0].id;
+
+      // Get all students from this class with their scores for the specified semester
+      const students = await Student.findAll({
+        where: { class_id: classId },
+        include: [
+          {
+            model: StudentScore,
+            required: false,
+            where: {
+              semester_no: semesterNo,
+              academic_year: academicYear
+            },
+            attributes: ['score', 'classification']
+          },
+          {
+            model: Faculty,
+            attributes: ['name', 'faculty_abbr']
+          },
+          {
+            model: Class,
+            attributes: ['name']
+          }
+        ],
+        attributes: ['student_id', 'student_name']
+      });
+
+      const formattedScores = students.map(student => ({
+        student_id: student.student_id,
+        score: student.StudentScores[0]?.score || 0,
+        classification: student.StudentScores[0]?.classification || 'Chưa có',
+        Student: {
+          student_name: student.student_name,
+          Faculty: student.Faculty,
+          Class: student.Class
+        }
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          studentScores: formattedScores
+        }
+      });
+    } catch (error) {
+      console.error('Error getting student scores by class and semester:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
     }
   }
 }
