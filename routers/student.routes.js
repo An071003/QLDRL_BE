@@ -4,7 +4,7 @@ const { authenticateUser, authorizeRoles, authorizePermissions } = require("../m
 
 const router = express.Router();
 
-router.get("/", authenticateUser, authorizePermissions('student:view'), StudentController.getAllStudents);
+router.get("/", StudentController.getAllStudents);
 router.get('/advisor', authenticateUser, authorizePermissions('student:view'), StudentController.getStudentsByAdvisorId);
 router.get('/classleader', authenticateUser, authorizePermissions('student:view'), StudentController.getStudentsByClassleaderId);
 router.get("/:id", authenticateUser, authorizePermissions('student:view'), StudentController.getStudentById);
