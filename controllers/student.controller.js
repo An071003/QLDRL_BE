@@ -1,5 +1,10 @@
 const Student = require('../models/student.model');
 const User = require('../models/user.model');
+const StudentScore = require('../models/studentScore.model');
+const StudentActivity = require('../models/studentActivity.model');
+const Activity = require('../models/activity.model');
+const Campaign = require('../models/campaign.model');
+const Criteria = require('../models/criteria.model');
 const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const emailMiddleware = require("../middlewares/emailMiddleware");
@@ -387,7 +392,7 @@ class StudentController {
   static async getStudentByUserId(req, res) {
     try {
       const { userId } = req.params;
-      
+
       const student = await Student.findOne({
         where: { user_id: userId },
         include: [
@@ -409,11 +414,11 @@ class StudentController {
           },
         ],
       });
-      
+
       if (!student) {
         return res.status(404).json({ message: "Class Leader not found" });
       }
-      
+
       res.status(200).json({ student });
     } catch (err) {
       res.status(500).json({ message: "Server error", error: err.message });
@@ -464,6 +469,264 @@ class StudentController {
       });
     }
   }
+
+  static async getMyProfile(req, res) {
+    try {
+      const userId = req.user.id;
+      console.log('User ID:', userId);
+      console.log('User object:', req.user);
+      
+      // Debug: Check if user exists
+      const user = await User.findByPk(userId, {
+        include: [{ model: Role, attributes: ['name'] }]
+      });
+      console.log('User found:', user);
+      
+      const student = await Student.findOne({
+        where: { user_id: userId },
+        include: [
+          { model: Faculty, attributes: ['id', 'name', 'faculty_abbr'] },
+          { model: Class, attributes: ['id', 'name'] },
+          { model: User, attributes: ['email'] }
+        ]
+      });
+      
+      console.log('Found student:', student);
+      
+      // Debug: Check all students in database
+      const allStudents = await Student.findAll({
+        attributes: ['student_id', 'user_id', 'student_name'],
+        limit: 5
+      });
+      console.log('All students (first 5):', allStudents);
+      
+      if (!student) {
+        console.log('No student found for user_id:', userId);
+        return res.status(404).json({ 
+          message: "Không tìm thấy sinh viên.",
+          debug: {
+            userId,
+            userExists: !!user,
+            userRole: user?.Role?.name,
+            totalStudents: allStudents.length
+          }
+        });
+      }
+      res.status(200).json({ status: "success", data: { student } });
+    } catch (err) {
+      console.error('Error in getMyProfile:', err);
+      res.status(500).json({ message: "Lỗi máy chủ.", error: err.message });
+    }
+  }
+
+  static async updateMyProfile(req, res) {
+    try {
+      const userId = req.user.id;
+      const { student_name, phone, birthdate } = req.body;
+
+      // Validate phone number if provided
+      if (phone && !/^\d{10}$/.test(phone)) {
+        return res.status(400).json({ message: "Số điện thoại không hợp lệ (phải có 10 chữ số)." });
+      }
+
+      // Validate birthdate if provided
+      if (birthdate && isNaN(Date.parse(birthdate))) {
+        return res.status(400).json({ message: "Ngày sinh không hợp lệ." });
+      }
+
+      const student = await Student.findOne({ where: { user_id: userId } });
+      if (!student) {
+        return res.status(404).json({ message: "Không tìm thấy sinh viên." });
+      }
+
+      // Update student information
+      const updateData = {};
+      if (student_name !== undefined) updateData.student_name = student_name;
+      if (phone !== undefined) updateData.phone = phone;
+      if (birthdate !== undefined) updateData.birthdate = birthdate;
+
+      await Student.update(updateData, { where: { user_id: userId } });
+
+      // Return updated student data
+      const updatedStudent = await Student.findOne({
+        where: { user_id: userId },
+        include: [
+          { model: Faculty, attributes: ['id', 'name', 'faculty_abbr'] },
+          { model: Class, attributes: ['id', 'name'] },
+          { model: User, attributes: ['email'] }
+        ]
+      });
+
+      res.status(200).json({ status: "success", data: { student: updatedStudent } });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getMyScores(req, res) {
+    try {
+      const userId = req.user.id;
+      const student = await Student.findOne({ where: { user_id: userId } });
+      if (!student) {
+        return res.status(404).json({ message: "Không tìm thấy sinh viên." });
+      }
+      const scores = await StudentScore.findAll({
+        where: { student_id: student.student_id },
+        order: [['academic_year', 'DESC'], ['semester_no', 'DESC']]
+      });
+      res.status(200).json({ status: "success", data: { scores } });
+    } catch (err) {
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getMySummary(req, res) {
+    try {
+      const userId = req.user.id;
+      const student = await Student.findOne({ where: { user_id: userId } });
+      if (!student) {
+        return res.status(404).json({ message: "Không tìm thấy sinh viên." });
+      }
+      res.status(200).json({ status: "success", data: { sumscore: student.sumscore, classification: student.classification } });
+    } catch (err) {
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+
+  static async getMyActivities(req, res) {
+    try {
+      const userId = req.user.id;
+      const { semester_no, academic_year } = req.query;
+      const student = await Student.findOne({ where: { user_id: userId } });
+      if (!student) return res.status(404).json({ message: "Không tìm thấy sinh viên." });
+      const activities = await StudentActivity.findAll({
+        where: { student_id: student.student_id },
+        include: [{
+          model: Activity,
+          include: [{
+            model: Campaign,
+            where: { semester_no, academic_year }
+          }]
+        }]
+      });
+      res.status(200).json({ status: "success", data: { activities } });
+    } catch (err) {
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getMyScoreDetail(req, res) {
+    try {
+      const userId = req.user.id;
+      const { semester_no, academic_year } = req.query;
+      if (!semester_no || !academic_year) {
+        return res.status(400).json({ message: "Thiếu tham số học kỳ hoặc năm học." });
+      }
+
+      // 1. Lấy student_id từ user_id
+      const student = await Student.findOne({ where: { user_id: userId } });
+      if (!student) return res.status(404).json({ message: "Không tìm thấy sinh viên." });
+
+      // 2. Lấy danh sách tiêu chí lớn
+      const criteriaList = await Criteria.findAll({
+        order: [['id', 'ASC']],
+        attributes: ['id', 'name', 'max_score']
+      });
+
+      // 3. Lấy danh sách campaign (nhóm nhỏ) theo kỳ
+      const campaigns = await Campaign.findAll({
+        where: { semester_no, academic_year },
+        order: [['criteria_id', 'ASC'], ['id', 'ASC']],
+        attributes: ['id', 'criteria_id', 'name', 'max_score']
+      });
+
+      // 4. Lấy tất cả activity thuộc các campaign
+      const campaignIds = campaigns.map(c => c.id);
+      const activities = await Activity.findAll({
+        where: { campaign_id: campaignIds.length ? campaignIds : [0] }, // tránh empty array
+        order: [['campaign_id', 'ASC']],
+        attributes: ['id', 'campaign_id', 'name', 'point', 'max_participants', 'status']
+      });
+
+      // 5. Lấy tất cả student_activity cho sv này, kỳ này
+      const activityIds = activities.map(a => a.id);
+      const studentActs = await StudentActivity.findAll({
+        where: {
+          student_id: student.student_id,
+          activity_id: activityIds.length ? activityIds : [0]
+        }
+      });
+
+      // 6. Group dữ liệu lại theo UI yêu cầu
+      // map: campaignId -> array of activities (thêm thông tin "has_participated", "awarded_score")
+      const studentActsMap = {};
+      studentActs.forEach(sa => {
+        studentActsMap[sa.activity_id] = sa; // mỗi hoạt động chỉ 1 dòng
+      });
+
+      const campaignMap = {};
+      campaigns.forEach(c => campaignMap[c.id] = c);
+
+      // group activity theo campaign
+      const activityByCampaign = {};
+      activities.forEach(a => {
+        if (!activityByCampaign[a.campaign_id]) activityByCampaign[a.campaign_id] = [];
+        activityByCampaign[a.campaign_id].push({
+          activity_id: a.id,
+          name: a.name,
+          point: a.point,
+          has_participated: !!studentActsMap[a.id],
+          awarded_score: studentActsMap[a.id]?.awarded_score ?? 0,
+          status: a.status,
+          max_participants: a.max_participants,
+        });
+      });
+
+      // map campaign theo criteria
+      const campaignByCriteria = {};
+      campaigns.forEach(c => {
+        if (!campaignByCriteria[c.criteria_id]) campaignByCriteria[c.criteria_id] = [];
+        campaignByCriteria[c.criteria_id].push({
+          id: c.id,
+          name: c.name,
+          max_score: c.max_score,
+          activities: activityByCampaign[c.id] || [],
+          total_score: (activityByCampaign[c.id] || []).reduce((sum, act) => sum + (act.awarded_score || 0), 0)
+        });
+      });
+
+      // Tổng hợp dữ liệu tiêu chí lớn
+      const resultCriteria = [];
+      let final_score = 0;
+
+      criteriaList.forEach(cri => {
+        const subcriteria = campaignByCriteria[cri.id] || [];
+        const total_score = subcriteria.reduce((sum, sc) => sum + (sc.total_score || 0), 0);
+        final_score += total_score;
+        resultCriteria.push({
+          id: cri.id,
+          name: cri.name,
+          max_score: cri.max_score,
+          total_score,
+          subcriteria
+        });
+      });
+
+      return res.status(200).json({
+        status: "success",
+        data: {
+          criteria: resultCriteria,
+          final_score
+        }
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ.", error: err.message });
+    }
+  }
+
 }
 
 module.exports = StudentController;

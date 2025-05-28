@@ -3,6 +3,7 @@ const Faculty = require('../models/faculty.model');
 const Advisor = require('../models/advisor.model')
 const Student = require('../models/student.model')
 const User = require('../models/user.model');
+const Role = require('../models/role.model');
 const sequelize = require('../config/db');
 
 class ClassController {
