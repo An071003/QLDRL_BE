@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const { Advisor, Faculty, Class, Role, User } = require("../models");
 const emailMiddleware = require("../middlewares/emailMiddleware");
 const Student = require('../models/student.model');

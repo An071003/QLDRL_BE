@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { DepartmentOfficer, User, Role } = require("../models");
 const emailMiddleware = require("../middlewares/emailMiddleware");

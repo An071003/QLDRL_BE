@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const { User, Role, Student } = require("../models");
 const emailMiddleware = require("../middlewares/emailMiddleware");
 const EmailVerificationCode = require("../models/EmailVerificationCode.model");

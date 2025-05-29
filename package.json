@@ -19,7 +19,7 @@
   "homepage": "https://github.com/An071003/QLDRL_BE#readme",
   "description": "",
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "bull": "^4.16.5",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
