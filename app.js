@@ -20,8 +20,7 @@ const studentRoutes = require("./routers/student.routes");
 const studentScoreRoutes = require("./routers/studentScore.routes");
 
 const app = express();
-console.log("🔧 Server is running on port", process.env.PORT);
-console.log("🌐 Allowed CORS origin:", process.env.FRONTEND_URL);
+
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true,
@@ -50,6 +49,7 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/student-activities', studentActivityRoutes);
 app.use('/api/student-scores', studentScoreRoutes);
 
-app.listen(process.env.PORT, () => {
-    console.log(`Server running on http://localhost:${process.env.PORT}`);
+app.listen(process.env.PORT || 3000, () => {
+    console.log(`Server running on port ${process.env.PORT || 3000}`);
+    console.log("🌐 Allowed CORS origin:", process.env.FRONTEND_URL);
 });
