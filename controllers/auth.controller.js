@@ -20,7 +20,7 @@ class AuthController {
             ),
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            sameSite: "none",
         };
 
         res.cookie("token", token, cookieOptions);
