@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+require('dotenv').config();
 const { User, Role, Student } = require("../models");
 const emailMiddleware = require("../middlewares/emailMiddleware");
 const EmailVerificationCode = require("../models/EmailVerificationCode.model");
