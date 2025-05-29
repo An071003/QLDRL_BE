@@ -36,6 +36,9 @@ app.get("/", (req, res) => {
   console.log("GET / - server is alive");
   res.send("Server is running!");
 });
+app.get("/env", (req, res) => {
+  res.json(process.env);
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
 app.use('/api/permissions', permissionRoutes);
