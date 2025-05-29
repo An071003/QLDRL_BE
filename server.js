@@ -21,14 +21,15 @@ const studentScoreRoutes = require("./routers/studentScore.routes");
 console.log("🌐 FRONTEND_URL =", process.env.FRONTEND_URL);
 const app = express();
 
-app.use(cors({
+const corsOptions ={
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN'],
   exposedHeaders: ['Set-Cookie'],
-}));
-
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
