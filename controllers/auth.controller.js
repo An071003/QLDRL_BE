@@ -21,14 +21,13 @@ class AuthController {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
-            path: '/',
-            partitioned: true
+            path: '/'
         };
 
         res.cookie("token", token, cookieOptions);
         
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
+        const cookieString = `token=${token}; Path=/; HttpOnly; Secure; SameSite=None; Expires=${cookieOptions.expires.toUTCString()}`;
+        res.setHeader('Set-Cookie', cookieString);
 
         user.password = undefined;
         res.status(statusCode).json({

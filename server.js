@@ -21,17 +21,25 @@ const studentScoreRoutes = require("./routers/studentScore.routes");
 
 const app = express();
 
+// Pre-flight requests
+app.options('*', cors());
+
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN', 'Cookie', 'Partitioned'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN'],
   exposedHeaders: ['Set-Cookie'],
-  maxAge: 600, // Cache preflight requests for 10 minutes
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
-// Handle preflight requests
-app.options('*', cors());
+// Add security headers
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || "http://localhost:3000");
+  next();
+});
 
 app.use(express.json());
 app.use(cookieParser());
