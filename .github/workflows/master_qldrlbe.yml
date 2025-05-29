@@ -53,18 +53,12 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       EMAIL_USER: ${{ secrets.EMAIL_USER }}
       EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-      FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+      FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: node-app
-          
-      - name: Check FRONTEND_URL
-        run: |
-          echo "FRONTEND_URL is $FRONTEND_URL"
-          echo "Length: ${#FRONTEND_URL}"
-        shell: bash
         
       - name: Login to Azure
         uses: azure/login@v2
