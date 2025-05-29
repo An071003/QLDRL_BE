@@ -16,20 +16,14 @@ class AuthController {
         const token = AuthController.signToken(payload);
         const cookieOptions = {
             expires: new Date(
-                Date.now() + (process.env.JWT_COOKIE_EXPIRES || 90) * 24 * 60 * 60 * 1000
+                Date.now() + process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000
             ),
             httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            path: '/',
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
         };
 
-        // Set cookie
         res.cookie("token", token, cookieOptions);
-
-        // Also set it in header for client-side access
-        res.setHeader('Set-Cookie', `token=${token}; Path=/; HttpOnly; Secure; SameSite=None`);
-
         user.password = undefined;
         res.status(statusCode).json({
             status: "success",
