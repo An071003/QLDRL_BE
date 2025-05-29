@@ -1,6 +1,6 @@
 const { Sequelize } = require('sequelize');
 const fs = require('fs');
-
+console.log("🧪 DB_SSL_CA =", process.env.DB_SSL_CA);
 const sequelize = new Sequelize(
   process.env.DB_NAME,     
   process.env.DB_USER,     
