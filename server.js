@@ -28,8 +28,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN'],
   exposedHeaders: ['Set-Cookie'],
 }));
-console.log("🧪 PORT =", process.env.PORT);
-console.log("🌐 Allowed CORS origin:", process.env.FRONTEND_URL || "http://localhost:3000");
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
