@@ -28,7 +28,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN'],
   exposedHeaders: ['Set-Cookie'],
 }));
-console.log(`Server running on port ${process.env.PORT}`)
+console.log("🧪 PORT =", process.env.PORT);
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
