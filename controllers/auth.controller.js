@@ -21,15 +21,19 @@ class AuthController {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
-            path: '/',
+            path: '/'
         };
 
+        // Set cookie in response
         res.cookie("token", token, cookieOptions);
+        
+        // Also send token in response body
         user.password = undefined;
         res.status(statusCode).json({
             status: "success",
             token,
             data: { user },
+            cookieSet: true // Add this flag to verify cookie was attempted to be set
         });
     }
 
