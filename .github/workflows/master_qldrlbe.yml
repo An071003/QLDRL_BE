@@ -60,8 +60,10 @@ jobs:
         with:
           name: node-app
           
-      - name: Check FRONTEND_URL length
-        run: echo "Length: ${#FRONTEND_URL}"
+      - name: Check FRONTEND_URL
+        run: |
+          echo "FRONTEND_URL is $FRONTEND_URL"
+          echo "Length: ${#FRONTEND_URL}"
         shell: bash
         
       - name: Login to Azure
