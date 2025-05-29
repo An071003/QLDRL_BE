@@ -53,6 +53,7 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       EMAIL_USER: ${{ secrets.EMAIL_USER }}
       EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      DB_SSL_CA: ${{ secrets.DB_SSL_CA }}
       FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
     steps:
       - name: Download artifact from build job
