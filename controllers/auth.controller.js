@@ -14,7 +14,6 @@ class AuthController {
 
     static createSendToken(payload, user, statusCode, res) {
         const token = AuthController.signToken(payload);
-        console.log(process.env.NODE_ENV);
         const cookieOptions = {
             expires: new Date(
                 Date.now() + (process.env.JWT_COOKIE_EXPIRES || 90) * 24 * 60 * 60 * 1000
@@ -24,7 +23,7 @@ class AuthController {
             sameSite: 'none',
             path: '/',
         };
-        console.log("Cookie Options:", cookieOptions);
+
         res.cookie("token", token, cookieOptions);
         user.password = undefined;
         res.status(statusCode).json({
