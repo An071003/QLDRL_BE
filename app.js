@@ -18,7 +18,7 @@ const activityRoutes = require("./routers/activity.routes");
 const studentActivityRoutes = require("./routers/studentActivity.routes");
 const studentRoutes = require("./routers/student.routes");
 const studentScoreRoutes = require("./routers/studentScore.routes");
-console.log("PORT =", process.env.PORT);
+console.log("🌐 FRONTEND_URL =", process.env.FRONTEND_URL);
 const app = express();
 
 app.use(cors({
