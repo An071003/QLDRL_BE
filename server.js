@@ -21,29 +21,39 @@ const studentScoreRoutes = require("./routers/studentScore.routes");
 
 const app = express();
 
-// Pre-flight requests
-app.options('*', cors());
-
-app.use(cors({
+const corsOptions = {
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN', 'Cookie'],
   exposedHeaders: ['Set-Cookie'],
   preflightContinue: false,
   optionsSuccessStatus: 204
-}));
+};
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 
 // Add security headers
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || "http://localhost:3000");
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-XSRF-TOKEN, Cookie');
   next();
 });
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
+});
+
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
 app.use('/api/permissions', permissionRoutes);
@@ -60,7 +70,17 @@ app.use('/api/activities', activityRoutes);
 app.use('/api/student-activities', studentActivityRoutes);
 app.use('/api/student-scores', studentScoreRoutes);
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`Server running on port ${process.env.PORT || 3000}`);
-    console.log("🌐 Allowed CORS origin:", process.env.FRONTEND_URL);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    message: 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log("🌐 Allowed CORS origin:", process.env.FRONTEND_URL || "http://localhost:3000");
 });
