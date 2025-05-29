@@ -32,7 +32,10 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-
+app.get("/", (req, res) => {
+  console.log("GET / - server is alive");
+  res.send("Server is running!");
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/roles", roleRoutes);
 app.use('/api/permissions', permissionRoutes);
