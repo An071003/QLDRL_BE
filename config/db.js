@@ -1,5 +1,6 @@
 const { Sequelize } = require('sequelize');
 const fs = require('fs');
+require('dotenv').config();
 console.log("🧪 DB_SSL_CA =", process.env.DB_SSL_CA);
 console.log("🧪 DB_HOST =", process.env.DB_HOST);
 console.log("🧪 DB_PORT =", process.env.DB_PORT);
