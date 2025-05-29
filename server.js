@@ -24,10 +24,14 @@ const app = express();
 app.use(cors({
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-XSRF-TOKEN', 'Cookie', 'Partitioned'],
   exposedHeaders: ['Set-Cookie'],
+  maxAge: 600, // Cache preflight requests for 10 minutes
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());
