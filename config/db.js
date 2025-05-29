@@ -1,25 +1,6 @@
-// const mysql = require('mysql2');
-
-// const db = mysql.createConnection({
-//   host: process.env.DB_HOST,
-//   user: process.env.DB_USER,
-//   password: process.env.DB_PASSWORD,
-//   database: process.env.DB_NAME,
-//   multipleStatements: true
-// });
-
-// db.connect((err) => {
-//   if (err) {
-//     console.error("❌ Kết nối MySQL thất bại:", err);
-//   } else {
-//     console.log("✅ Kết nối MySQL thành công");
-//   }
-// });
-
-// module.exports = db;
-
-
 const { Sequelize } = require('sequelize');
+const fs = require('fs');
+require('dotenv').config();
 
 const sequelize = new Sequelize(
   process.env.DB_NAME,     
@@ -27,8 +8,14 @@ const sequelize = new Sequelize(
   process.env.DB_PASSWORD, 
   {
     host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
     dialect: 'mysql',
     logging: false,
+    dialectOptions: {
+      ssl: {
+        ca: fs.readFileSync(process.env.DB_SSL_CA)
+      }
+    }
   }
 );
 

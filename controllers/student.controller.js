@@ -6,7 +6,7 @@ const Activity = require('../models/activity.model');
 const Campaign = require('../models/campaign.model');
 const Criteria = require('../models/criteria.model');
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const emailMiddleware = require("../middlewares/emailMiddleware");
 const { Faculty, Class, Role, Advisor } = require('../models');
 

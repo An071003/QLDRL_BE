@@ -2,6 +2,7 @@ const nodemailer = require('nodemailer');
 const { User, EmailVerificationCode } = require('../models');
 const cron = require("node-cron");
 const { Op } = require('sequelize');
+require('dotenv').config();
 
 const sendEmail = async (toEmail, subject, htmlContent) => {
     const transporter = nodemailer.createTransport({

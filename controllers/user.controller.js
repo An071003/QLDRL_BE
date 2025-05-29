@@ -1,6 +1,6 @@
 const User = require("../models/user.model");
 const crypto = require("crypto");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const pLimit = require('p-limit');
 const emailMiddleware = require("../middlewares/emailMiddleware");
 const Student = require("../models/student.model");
