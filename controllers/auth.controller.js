@@ -21,24 +21,26 @@ class AuthController {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
-            path: '/'
+            path: '/',
         };
 
-        // Set cookie in response
+        // Set cookie
         res.cookie("token", token, cookieOptions);
-        
-        // Also send token in response body
+
+        // Also set it in header for client-side access
+        res.setHeader('Set-Cookie', `token=${token}; Path=/; HttpOnly; Secure; SameSite=None`);
+
         user.password = undefined;
         res.status(statusCode).json({
             status: "success",
             token,
             data: { user },
-            cookieSet: true // Add this flag to verify cookie was attempted to be set
         });
     }
 
     static async login(req, res) {
         const { user_name, password } = req.body;
+        console.log("Body nhận được:", req.body);
         if (!user_name || !password) {
             return res.status(400).json({ message: "Vui lòng cung cấp tên đăng nhập và mật khẩu." });
         }
