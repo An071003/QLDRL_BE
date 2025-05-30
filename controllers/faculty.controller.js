@@ -1,12 +1,31 @@
 const { Class } = require('../models');
 const Faculty = require('../models/faculty.model');
+const { QueryTypes } = require('sequelize');
+const sequelize = require('../config/db');
 
 class FacultyController {
   static async getAllFaculties(req, res) {
     try {
-      const faculties = await Faculty.findAll();
+      const faculties = await sequelize.query(`
+        SELECT 
+          f.*,
+          COALESCE(class_count.count, 0) as class_count
+        FROM faculties f
+        LEFT JOIN (
+          SELECT 
+            faculty_id,
+            COUNT(*) as count
+          FROM classes
+          GROUP BY faculty_id
+        ) class_count ON f.id = class_count.faculty_id
+        ORDER BY f.id
+      `, {
+        type: QueryTypes.SELECT
+      });
+      
       res.status(200).json({ status: 'success', data: { faculties } });
     } catch (err) {
+      console.error('Error fetching faculties with class count:', err);
       res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }

@@ -1,11 +1,24 @@
 const { where } = require("sequelize");
-const { Criteria } = require("../models");
+const { Criteria, Campaign } = require("../models");
 
 class CriteriaController {
   static async getAllCriteria(req, res) {
     try {
       const criteria = await Criteria.findAll({
-        attributes: ['id', 'name', 'max_score', 'created_by']
+        attributes: [
+          'id', 
+          'name', 
+          'max_score', 
+          'created_by',
+          [
+            require('sequelize').literal(`(
+              SELECT COUNT(*)
+              FROM campaigns
+              WHERE campaigns.criteria_id = Criteria.id
+            )`),
+            'campaign_count'
+          ]
+        ]
       });
       res.status(200).json({ status: "success", data: { criteria } });
     } catch (err) {

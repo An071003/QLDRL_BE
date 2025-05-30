@@ -4,14 +4,49 @@ const Advisor = require('../models/advisor.model')
 const Student = require('../models/student.model')
 const User = require('../models/user.model');
 const Role = require('../models/role.model');
+const { QueryTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
 class ClassController {
   static async getAllClasses(req, res) {
     try {
-      const classes = await Class.findAll({ include: Faculty });
-      res.status(200).json({ status: 'success', data: { classes } });
+      const classes = await sequelize.query(`
+        SELECT 
+          c.*,
+          f.name as faculty_name,
+          f.faculty_abbr,
+          COALESCE(student_count.count, 0) as student_count
+        FROM classes c
+        LEFT JOIN faculties f ON c.faculty_id = f.id
+        LEFT JOIN (
+          SELECT 
+            class_id,
+            COUNT(*) as count
+          FROM students
+          GROUP BY class_id
+        ) student_count ON c.id = student_count.class_id
+        ORDER BY c.id
+      `, {
+        type: QueryTypes.SELECT
+      });
+      
+      // Transform the result to match the expected format
+      const formattedClasses = classes.map(classItem => ({
+        id: classItem.id,
+        name: classItem.name,
+        faculty_id: classItem.faculty_id,
+        cohort: classItem.cohort,
+        student_count: classItem.student_count,
+        Faculty: {
+          id: classItem.faculty_id,
+          name: classItem.faculty_name,
+          faculty_abbr: classItem.faculty_abbr
+        }
+      }));
+      
+      res.status(200).json({ status: 'success', data: { classes: formattedClasses } });
     } catch (err) {
+      console.error('Error fetching classes with student count:', err);
       res.status(500).json({ message: 'Lỗi máy chủ.' });
     }
   }

@@ -1,11 +1,11 @@
-const { Op } = require("sequelize");
+const { Op, QueryTypes } = require("sequelize");
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const { Advisor, Faculty, Class, Role, User } = require("../models");
 const emailMiddleware = require("../middlewares/emailMiddleware");
 const Student = require('../models/student.model');
 const StudentScore = require('../models/studentScore.model');
-const db = require('../config/db');
+const sequelize = require('../config/db');
 
 class AdvisorController {
   static generateRandomPassword = () => {
@@ -309,14 +309,6 @@ class AdvisorController {
             attributes: ['id', 'name', 'faculty_abbr'],
           },
           {
-            model: Class,
-            include: [
-              {
-                model: Faculty,
-              }
-            ],
-          },
-          {
             model: User,
             attributes: ['email'],
           },
@@ -327,8 +319,52 @@ class AdvisorController {
         return res.status(404).json({ message: "Advisor not found" });
       }
 
-      res.status(200).json({ advisor });
+      // Get classes with student count using raw SQL query
+      const classesWithStudentCount = await sequelize.query(`
+        SELECT 
+          c.*,
+          f.name as faculty_name,
+          f.faculty_abbr,
+          COALESCE(student_count.count, 0) as student_count
+        FROM classes c
+        LEFT JOIN faculties f ON c.faculty_id = f.id
+        LEFT JOIN (
+          SELECT 
+            class_id,
+            COUNT(*) as count
+          FROM students
+          GROUP BY class_id
+        ) student_count ON c.id = student_count.class_id
+        WHERE c.advisor_id = :advisorId
+        ORDER BY c.id
+      `, {
+        replacements: { advisorId: advisor.id },
+        type: QueryTypes.SELECT
+      });
+
+      // Format the classes data
+      const formattedClasses = classesWithStudentCount.map(classItem => ({
+        id: classItem.id,
+        name: classItem.name,
+        faculty_id: classItem.faculty_id,
+        cohort: classItem.cohort,
+        student_count: classItem.student_count,
+        Faculty: {
+          id: classItem.faculty_id,
+          name: classItem.faculty_name,
+          faculty_abbr: classItem.faculty_abbr
+        }
+      }));
+
+      // Add the formatted classes to the advisor object
+      const advisorWithClasses = {
+        ...advisor.toJSON(),
+        Classes: formattedClasses
+      };
+
+      res.status(200).json({ advisor: advisorWithClasses });
     } catch (err) {
+      console.error('Error in getAdvisorByUserId:', err);
       res.status(500).json({ message: "Server error", error: err.message });
     }
   }
@@ -391,7 +427,7 @@ class AdvisorController {
       const students = await Student.findAll({
         where: {
           class_id: {
-            [db.Sequelize.Op.in]: classIds
+            [sequelize.Op.in]: classIds
           }
         },
         include: [
@@ -468,7 +504,7 @@ class AdvisorController {
       const students = await Student.findAll({
         where: {
           class_id: {
-            [db.Sequelize.Op.in]: classIds
+            [sequelize.Op.in]: classIds
           }
         },
         include: [
