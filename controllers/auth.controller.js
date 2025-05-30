@@ -19,11 +19,11 @@ class AuthController {
                 Date.now() + (process.env.JWT_COOKIE_EXPIRES || 90) * 24 * 60 * 60 * 1000
             ),
             httpOnly: true,
-            secure: true,
-            sameSite: 'none',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             path: '/',
         };
-        console.log("Cookie Options:", cookieOptions);
+
         res.cookie("token", token, cookieOptions);
         user.password = undefined;
         res.status(statusCode).json({
