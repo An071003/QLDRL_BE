@@ -23,7 +23,7 @@ class AuthController {
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             path: '/',
         };
-        console.log("Cookie Options:", cookieOptions);
+
         res.cookie("token", token, cookieOptions);
         user.password = undefined;
         res.status(statusCode).json({
