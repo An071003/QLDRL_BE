@@ -1,4 +1,4 @@
-const { Campaign, Criteria } = require("../models");
+const { Campaign, Criteria, Activity } = require("../models");
 
 class CampaignController {
   static async getAllCampaigns(req, res) {
@@ -156,6 +156,98 @@ class CampaignController {
 
     } catch (err) {
       res.status(500).json({ message: "Lỗi máy chủ khi import chiến dịch." });
+    }
+  }
+
+  static async getSemesters(req, res) {
+    try {
+      const semesters = await Campaign.findAll({
+        attributes: [
+          'semester_no', 
+          'academic_year',
+          [require('sequelize').fn('COUNT', require('sequelize').col('id')), 'activity_count']
+        ],
+        group: ['semester_no', 'academic_year'],
+        order: [['academic_year', 'DESC'], ['semester_no', 'DESC']]
+      });
+      
+      const formattedSemesters = semesters.map(s => {
+        const nextYear = s.academic_year + 1;
+        const label = s.semester_no === 3 
+          ? `Học kỳ Hè (${s.academic_year} - ${nextYear})` 
+          : `Học kỳ ${s.semester_no} (${s.academic_year} - ${nextYear})`;
+        
+        return {
+          value: `${s.semester_no}_${s.academic_year}`,
+          label: label,
+          semester_no: s.semester_no,
+          academic_year: s.academic_year
+        };
+      });
+      
+      res.status(200).json({ 
+        status: "success", 
+        data: { semesters: formattedSemesters } 
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getCampaignsBySemester(req, res) {
+    const { semester_no, academic_year } = req.params;
+    
+    try {
+      // Validate parameters
+      if (!semester_no || !academic_year) {
+        return res.status(400).json({ message: "Thiếu thông tin học kỳ và năm học." });
+      }
+
+      const campaigns = await Campaign.findAll({
+        where: {
+          semester_no: parseInt(semester_no),
+          academic_year: parseInt(academic_year)
+        },
+        attributes: [
+          'id', 
+          'criteria_id', 
+          'name', 
+          'max_score', 
+          'semester_no', 
+          'academic_year', 
+          'created_by',
+          [
+            require('sequelize').literal(`(
+              SELECT COUNT(*)
+              FROM activities
+              WHERE activities.campaign_id = Campaign.id
+            )`),
+            'activity_count'
+          ]
+        ],
+        include: [
+          {
+            model: Criteria,
+            as: 'Criteria',
+            attributes: ['id', 'name']
+          }
+        ],
+        order: [['id', 'DESC']]
+      });
+
+      res.status(200).json({ 
+        status: "success", 
+        data: { campaigns },
+        meta: {
+          semester_no: parseInt(semester_no),
+          academic_year: parseInt(academic_year),
+          total_campaigns: campaigns.length
+        }
+      });
+    } catch (err) {
+      console.error('Error fetching campaigns by semester:', err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
     }
   }
 }

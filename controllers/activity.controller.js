@@ -5,6 +5,20 @@ class ActivityController {
 
   static async getAllActivities(req, res) {
     try {
+      const { semester_no, academic_year } = req.query;
+      
+      // Require semester parameters
+      if (!semester_no || !academic_year) {
+        return res.status(400).json({ 
+          message: "Vui lòng chọn học kỳ để xem danh sách hoạt động." 
+        });
+      }
+      
+      const campaignWhereClause = {
+        semester_no: parseInt(semester_no),
+        academic_year: parseInt(academic_year)
+      };
+      
       const activities = await Activity.findAll({
         attributes: [
           'id', 'campaign_id', 'name', 'point', 'max_participants',
@@ -28,7 +42,8 @@ class ActivityController {
             model: sequelize.models.Campaign,
             as: 'Campaign',
             attributes: ['id', 'name', 'semester_no', 'academic_year'],
-            required: false
+            required: true, // Require join để filter được
+            where: campaignWhereClause
           }
         ]
       });
