@@ -688,12 +688,16 @@ class StudentController {
       const campaignByCriteria = {};
       campaigns.forEach(c => {
         if (!campaignByCriteria[c.criteria_id]) campaignByCriteria[c.criteria_id] = [];
+        const activitiesScore = (activityByCampaign[c.id] || []).reduce((sum, act) => sum + (act.awarded_score || 0), 0);
+        // Apply max_score limit for subcriteria (campaign)
+        const limitedScore = Math.min(activitiesScore, c.max_score);
+        
         campaignByCriteria[c.criteria_id].push({
           id: c.id,
           name: c.name,
           max_score: c.max_score,
           activities: activityByCampaign[c.id] || [],
-          total_score: (activityByCampaign[c.id] || []).reduce((sum, act) => sum + (act.awarded_score || 0), 0)
+          total_score: limitedScore
         });
       });
 
@@ -703,7 +707,9 @@ class StudentController {
 
       criteriaList.forEach(cri => {
         const subcriteria = campaignByCriteria[cri.id] || [];
-        const total_score = subcriteria.reduce((sum, sc) => sum + (sc.total_score || 0), 0);
+        const total_score_before_limit = subcriteria.reduce((sum, sc) => sum + (sc.total_score || 0), 0);
+        // Apply max_score limit for criteria
+        const total_score = Math.min(total_score_before_limit, cri.max_score);
         final_score += total_score;
         resultCriteria.push({
           id: cri.id,
