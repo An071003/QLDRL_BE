@@ -21,7 +21,7 @@ class StudentController {
         include: [
           {
             model: Faculty,
-            attributes: ['faculty_abbr'],
+            attributes: ['name', 'faculty_abbr'],
           },
           {
             model: Class,
@@ -473,14 +473,11 @@ class StudentController {
   static async getMyProfile(req, res) {
     try {
       const userId = req.user.id;
-      console.log('User ID:', userId);
-      console.log('User object:', req.user);
       
       // Debug: Check if user exists
       const user = await User.findByPk(userId, {
         include: [{ model: Role, attributes: ['name'] }]
       });
-      console.log('User found:', user);
       
       const student = await Student.findOne({
         where: { user_id: userId },
@@ -491,17 +488,13 @@ class StudentController {
         ]
       });
       
-      console.log('Found student:', student);
-      
       // Debug: Check all students in database
       const allStudents = await Student.findAll({
         attributes: ['student_id', 'user_id', 'student_name'],
         limit: 5
       });
-      console.log('All students (first 5):', allStudents);
       
       if (!student) {
-        console.log('No student found for user_id:', userId);
         return res.status(404).json({ 
           message: "Không tìm thấy sinh viên.",
           debug: {

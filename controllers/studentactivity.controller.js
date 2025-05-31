@@ -554,9 +554,6 @@ class StudentActivityController {
           }
         ]
       });
-
-      // Log số lượng hoạt động tìm được để kiểm tra
-      console.log(`Found ${activities.length} available activities for student ${studentId}`);
       
       // Trả về thông tin chi tiết về các điều kiện lọc để dễ gỡ lỗi
       res.status(200).json({
@@ -657,9 +654,6 @@ class StudentActivityController {
           }
         ]
       });
-
-      // Log số lượng hoạt động tìm được để kiểm tra
-      console.log(`Found ${activities.length} registered activities for student ${studentId}`);
 
       res.status(200).json({
         status: 'success',

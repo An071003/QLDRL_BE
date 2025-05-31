@@ -35,7 +35,6 @@ class AuthController {
 
     static async login(req, res) {
         const { user_name, password } = req.body;
-        console.log("Body nhận được:", req.body);
         if (!user_name || !password) {
             return res.status(400).json({ message: "Vui lòng cung cấp tên đăng nhập và mật khẩu." });
         }
@@ -53,7 +52,7 @@ class AuthController {
             const payload = { id: user.id, role: user.Role?.name || null };
             AuthController.createSendToken(payload, user, 200, res);
         } catch (err) {
-            console.log("Login Error: ", err);
+            console.error("Login Error: ", err);
             res.status(500).json({ message: "Lỗi máy chủ.", error: err });
         }
     }

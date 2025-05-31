@@ -23,7 +23,7 @@ const sendEmail = async (toEmail, subject, htmlContent) => {
     try {
         await transporter.sendMail(mailOptions);
     } catch (error) {
-        console.log('Lỗi gửi email:', error);
+        console.error('Lỗi gửi email:', error);
         throw new Error('Lỗi gửi email');
     }
 };

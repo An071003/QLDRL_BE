@@ -259,7 +259,6 @@ class ActivityController {
       campaign_id, name, point, max_participants,
       registration_start, registration_end, status
     } = req.body;
-    console.log(req.body);
     try {
       const activity = await Activity.findByPk(id);
       if (!activity) {
