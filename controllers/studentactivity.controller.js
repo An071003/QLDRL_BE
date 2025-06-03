@@ -415,7 +415,7 @@ class StudentActivityController {
         student_id,
         activity_id: activityId,
         awarded_score: activity.point,
-        participated: true
+        participated: false,
       }));
 
       await StudentActivity.bulkCreate(studentActivities);
