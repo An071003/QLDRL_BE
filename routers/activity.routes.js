@@ -7,6 +7,7 @@ router.get("/", authenticateUser, authorizePermissions('activity:view'), Activit
 router.get("/pending", authenticateUser, authorizePermissions('activity:view'), ActivityController.getPendingActivities);
 router.get("/approved", authenticateUser, authorizePermissions('activity:view'), ActivityController.getApprovedActivities);
 router.get("/created-pending", authenticateUser, authorizePermissions('activity:view'), ActivityController.getCreatedPendingActivities);
+router.get("/campaign/:campaignId", authenticateUser, authorizePermissions('activity:view'), ActivityController.getActivitiesByCampaignId);
 router.put("/:id/approve", authenticateUser, authorizePermissions('activity:update'), ActivityController.approveActivity);
 router.put("/:id/reject", authenticateUser, authorizePermissions('activity:update'), ActivityController.rejectActivity);
 router.get("/:id", authenticateUser, authorizePermissions('activity:view'), ActivityController.getActivityById);

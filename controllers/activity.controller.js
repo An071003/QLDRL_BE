@@ -1,5 +1,6 @@
 const { Activity, User } = require("../models");
 const sequelize = require('../config/db');
+const { Sequelize } = require("sequelize");
 
 class ActivityController {
 
@@ -88,6 +89,47 @@ class ActivityController {
         return res.status(404).json({ message: "Hoạt động không tồn tại." });
       }
       res.status(200).json({ status: "success", data: { activity } });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Lỗi máy chủ." });
+    }
+  }
+
+  static async getActivitiesByCampaignId(req, res) {
+    const { campaignId } = req.params;
+    try {
+      const activities = await Activity.findAll({
+        where: { 
+          campaign_id: parseInt(campaignId),
+          approver_id: { [Sequelize.Op.ne]: null }
+        },
+        attributes: [
+          'id', 'campaign_id', 'name', 'point', 'max_participants',
+          'number_students', 'status', 'registration_start', 'registration_end',
+          'approver_id', 'approved_at', 'created_by', 'created_at'
+        ],
+        include: [
+          {
+            model: User,
+            as: 'Creator',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'Approver',
+            attributes: ['id', 'user_name', 'email'],
+            required: false
+          },
+          {
+            model: sequelize.models.Campaign,
+            as: 'Campaign',
+            attributes: ['id', 'name', 'semester_no', 'academic_year'],
+            required: false
+          }
+        ]
+      });
+      res.status(200).json({ status: "success", data: { activities } });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Lỗi máy chủ." });
